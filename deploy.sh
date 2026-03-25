@@ -20,7 +20,10 @@ echo "🗄️ Setting up database..."
 npx prisma generate
 npx prisma db push
 
-# 4. Build Next.js application
+# 4. Clean cache and Build Next.js application
+echo "🧹 Cleaning previous build cache..."
+rm -rf .next
+
 echo "🔨 Building Next.js app..."
 npm run build
 
