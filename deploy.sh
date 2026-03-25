@@ -31,7 +31,12 @@ npm run build
 APP_NAME="pevzner-app"
 PORT=3008
 
-echo "🔄 Restarting PM2 process '$APP_NAME' on port $PORT..."
-pm2 start npm --name "$APP_NAME" -- start -- -p $PORT || pm2 restart "$APP_NAME"
+echo "🔄 Deleting old PM2 instances of '$APP_NAME'..."
+pm2 delete "$APP_NAME" 2>/dev/null || true
+
+echo "🚀 Starting PM2 process '$APP_NAME' on port $PORT..."
+PORT=$PORT pm2 start npm --name "$APP_NAME" -- start
+
+pm2 save
 
 echo "✅ Deployment successful! App is running on port $PORT."
