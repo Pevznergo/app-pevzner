@@ -1,0 +1,92 @@
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import prisma from "./lib/prisma";
+import bcrypt from "bcryptjs";
+
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  adapter: PrismaAdapter(prisma),
+  session: { strategy: "jwt" },
+  providers: [
+    Credentials({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+        code: { label: "Code", type: "text" },
+      },
+      authorize: async (credentials) => {
+        if (!credentials?.email) throw new Error("Email required");
+
+        const email = credentials.email as string;
+        const user = await prisma.user.findUnique({ 
+          where: { email },
+          include: { accounts: true }
+        });
+
+        // 1. Handle OTP Verification if 'code' is provided
+        if (credentials.code) {
+          const code = credentials.code as string;
+          const tokenRecord = await prisma.verificationToken.findFirst({
+            where: { identifier: email, token: code },
+          });
+
+          if (!tokenRecord || tokenRecord.expires < new Date()) {
+            throw new Error("Invalid or expired code");
+          }
+
+          // Mark user as verified
+          await prisma.user.update({
+            where: { email },
+            data: { emailVerified: new Date() },
+          });
+
+          // Clean up token
+          await prisma.verificationToken.delete({
+            where: { identifier_token: { identifier: email, token: code } },
+          });
+
+          return user;
+        }
+
+        // 2. Standard Password Login
+        if (!credentials.password) throw new Error("Password required");
+        if (!user || !user.password) {
+          throw new Error("No user found with this email");
+        }
+
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password as string,
+          user.password
+        );
+
+        if (!isPasswordValid) {
+          throw new Error("Invalid password");
+        }
+
+        // If password is valid but email not verified, we'll handle this in the UI
+        // or return user and let middleware/UI check emailVerified.
+        return user;
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.emailVerified = (user as any).emailVerified;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token && session.user) {
+        (session.user as any).id = token.id;
+        (session.user as any).emailVerified = token.emailVerified;
+      }
+      return session;
+    },
+  },
+  pages: {
+    signIn: "/auth",
+  },
+});
