@@ -37,7 +37,7 @@ export default function AuthForm() {
         if (!res.ok) throw new Error(data.error || "Signup failed");
         
         setView("verify");
-        setMessage("Аккаунт создан! Пожалуйста, введите код из письма.");
+        setMessage("Account created! Please enter the code from your email.");
       } else {
         // Login mode
         const result = await signIn("credentials", {
@@ -47,7 +47,7 @@ export default function AuthForm() {
         });
 
         if (result?.error) {
-          throw new Error(result.error === "CredentialsSignin" ? "Неверный пароль" : result.error);
+          throw new Error(result.error === "CredentialsSignin" ? "Incorrect password" : result.error);
         }
 
         // Check if user is verified (we store this in session/token)
@@ -64,7 +64,7 @@ export default function AuthForm() {
 
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code || code.length !== 6) return setError("Введите 6-значный код");
+    if (!code || code.length !== 6) return setError("Please enter the 6-digit code");
 
     setLoading(true);
     setError("");
@@ -77,7 +77,7 @@ export default function AuthForm() {
       });
 
       if (result?.error) {
-        throw new Error("Неверный код или срок его действия истек");
+        throw new Error("Invalid code or it has expired");
       }
       
       window.location.href = "/quiz";
@@ -91,12 +91,12 @@ export default function AuthForm() {
     <div className="w-full max-w-md mx-auto step-card">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-2">
-          {view === "verify" ? "Подтверждение" : view === "register" ? "Регистрация" : "Вход"}
+          {view === "verify" ? "Verification" : view === "register" ? "Sign Up" : "Sign In"}
         </h1>
         <p className="text-[var(--color-text-muted)]">
           {view === "verify" 
-            ? `Код отправлен на ${email}` 
-            : "Введите ваши данные для доступа к платформе"}
+            ? `Code sent to ${email}` 
+            : "Enter your credentials to access the platform"}
         </p>
       </div>
 
@@ -130,7 +130,7 @@ export default function AuthForm() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Пароль</label>
+              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-muted)]" />
                 <input
@@ -148,7 +148,7 @@ export default function AuthForm() {
               disabled={loading}
               className="btn-primary w-full flex justify-center items-center gap-2"
             >
-              {loading ? "Загрузка..." : view === "register" ? "Зарегистрироваться" : "Войти"}
+              {loading ? "Loading..." : view === "register" ? "Create Account" : "Sign In"}
               {view === "register" ? <UserPlus className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
             </button>
           </form>
@@ -158,14 +158,14 @@ export default function AuthForm() {
               onClick={() => setView(view === "login" ? "register" : "login")}
               className="text-sm text-[var(--color-text-muted)] hover:text-white transition-colors"
             >
-              {view === "login" ? "Нет аккаунта? Зарегистрируйтесь" : "Уже есть аккаунт? Войдите"}
+              {view === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
           </div>
         </div>
       ) : (
         <form onSubmit={handleVerifyCode} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">6-значный код</label>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">6-digit code</label>
             <div className="relative">
               <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-muted)]" />
               <input
@@ -178,9 +178,9 @@ export default function AuthForm() {
               />
             </div>
             <p className="text-xs text-[var(--color-text-muted)] text-center mt-3">
-              Отправлен на {email} <br/>
+              Sent to {email} <br/>
               <button type="button" onClick={() => setView("login")} className="text-[var(--color-accent-blue)] mt-1 hover:underline">
-                Вернуться ко входу
+                Back to Sign In
               </button>
             </p>
           </div>
@@ -189,7 +189,7 @@ export default function AuthForm() {
             disabled={loading || code.length !== 6}
             className="btn-primary w-full flex justify-center items-center gap-2 mt-4"
           >
-            {loading ? "Проверка..." : "Подтвердить"}
+            {loading ? "Verifying..." : "Confirm"}
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>

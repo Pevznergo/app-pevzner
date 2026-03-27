@@ -9,7 +9,7 @@ export default function AuthPage() {
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[rgba(59,130,246,0.08)] rounded-full blur-[100px] pointer-events-none"></div>
       
       <div className="w-full z-10">
-        <Suspense fallback={<div className="text-center text-[var(--color-text-muted)]">Загрузка...</div>}>
+        <Suspense fallback={<div className="text-center text-[var(--color-text-muted)]">Loading...</div>}>
           <AuthForm />
         </Suspense>
       </div>

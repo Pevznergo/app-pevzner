@@ -50,13 +50,13 @@ export async function POST(req: Request) {
     const { error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || "Pevzner Foundation <noreply@aporto.tech>",
       to: email,
-      subject: "Ваш код подтверждения / Your verification code",
+      subject: "Your verification code",
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Код авторизации</h2>
-          <p>Ваш одноразовый код для входа:</p>
+          <h2>Verification Code</h2>
+          <p>Your one-time login code:</p>
           <h1 style="letter-spacing: 5px; font-size: 36px; color: #3b82f6;">${otp}</h1>
-          <p>Код действителен в течение 10 минут.</p>
+          <p>This code is valid for 10 minutes.</p>
         </div>
       `,
     });
