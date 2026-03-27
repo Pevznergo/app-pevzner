@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
     // Send the email via Resend
     const { error } = await resend.emails.send({
-      from: "Pevzner Foundation <onboarding@resend.dev>", // Typically you need a verified domain here, onboarding works for testing
+      from: process.env.EMAIL_FROM || "Pevzner Foundation <noreply@aporto.tech>",
       to: email,
       subject: "Ваш код подтверждения / Your verification code",
       html: `
