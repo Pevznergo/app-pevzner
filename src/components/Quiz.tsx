@@ -2,87 +2,300 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ChevronRight, ChevronDown } from "lucide-react";
 
-// Placeholder data since questions will be provided separately
-const MOCK_QUESTIONS = [
+const CREDIT_QUESTIONS = [
   {
     id: 1,
-    question: "Какая ваша основная цель использования платформы?",
-    options: ["Исследования", "Обучение", "Инвестиции", "Другое"],
+    question: "Have you received Google Cloud for Startups credits?",
+    credit: 2000,
+    label: "Google Cloud for Startups",
   },
   {
     id: 2,
-    question: "Какой у вас опыт в данной сфере?",
-    options: ["Новичок", "Средний уровень", "Профессионал"],
+    question: "Have you received AWS Activate credits?",
+    credit: 10000,
+    label: "AWS Activate",
   },
   {
     id: 3,
-    question: "Как часто вы планируете пользоваться инструментами?",
-    options: ["Каждый день", "Раз в неделю", "Раз в месяц", "Пока не уверен"],
-  }
+    question: "Have you received Microsoft for Startups credits?",
+    credit: 5000,
+    label: "Microsoft for Startups",
+  },
 ];
+
+const PERKS = [
+  {
+    title: "Google Cloud for Startups",
+    amount: "$2,000",
+    steps: [
+      "Go to cloud.google.com/startup",
+      "Apply with your startup email",
+      "Receive $2,000 in credits within 3-5 business days",
+    ],
+    note: "Credits valid for 12 months",
+  },
+  {
+    title: "AWS Activate",
+    amount: "$10,000",
+    steps: [
+      "Visit aws.amazon.com/activate",
+      "Complete the Activate application (portfolio companies eligible for $10k)",
+      "Credits applied to your AWS account within 2 weeks",
+    ],
+    note: "Requires active AWS account",
+  },
+  {
+    title: "Microsoft for Startups",
+    amount: "$5,000",
+    steps: [
+      "Apply at microsoft.com/en-us/startups",
+      "Get accepted into the Founders Hub",
+      "Receive up to $5,000 in Azure credits + GitHub Copilot + other benefits",
+    ],
+    note: "Must have an active product/prototype",
+  },
+];
+
+function formatCurrency(amount: number): string {
+  return "$" + amount.toLocaleString("en-US");
+}
 
 export default function Quiz() {
   const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<Record<number, boolean | null>>({});
   const [isFinished, setIsFinished] = useState(false);
+  const [showPerks, setShowPerks] = useState(false);
+  const [openPerks, setOpenPerks] = useState<Record<number, boolean>>({});
 
-  const handleSelectOption = (option: string) => {
-    setAnswers((prev) => ({ ...prev, [currentStep]: option }));
+  const handleSelectAnswer = (answer: boolean) => {
+    setAnswers((prev) => ({ ...prev, [currentStep]: answer }));
   };
 
   const handleNext = () => {
-    if (currentStep < MOCK_QUESTIONS.length - 1) {
+    if (currentStep < CREDIT_QUESTIONS.length - 1) {
       setCurrentStep((prev) => prev + 1);
     } else {
       setIsFinished(true);
-      // Here you could send the answers to the backend
     }
   };
 
-  const activeQuestion = MOCK_QUESTIONS[currentStep];
+  const togglePerk = (idx: number) => {
+    setOpenPerks((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  const total = CREDIT_QUESTIONS.reduce((sum, q, idx) => {
+    return answers[idx] === true ? sum + q.credit : sum;
+  }, 0);
+
+  const cashAmount = Math.floor(total * 0.3);
+  const progressPercent = isFinished
+    ? 100
+    : Math.round((currentStep / CREDIT_QUESTIONS.length) * 100);
 
   if (isFinished) {
+    if (total === 0) {
+      return (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="step-card"
+        >
+          <div className="mb-6">
+            <div className="w-full h-1.5 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden">
+              <div className="h-full w-full bg-gradient-to-r from-[var(--color-accent-blue)] to-[var(--color-accent-purple)]" />
+            </div>
+          </div>
+
+          <h2 className="text-3xl font-bold mb-3">
+            You may still have credits available
+          </h2>
+          <p className="text-[var(--color-text-muted)] mb-6">
+            Many startups qualify for cloud credits they haven't claimed yet.
+          </p>
+          <p className="text-[var(--color-text-muted)] mb-8">
+            Even if you haven't received credits from Google, AWS, or Microsoft,
+            you may still be eligible. Reach out and we'll help you figure it out.
+          </p>
+
+          <a
+            href="mailto:support@pevzner.pro"
+            className="btn-primary inline-flex items-center gap-2"
+          >
+            Contact Us
+            <ArrowRight className="w-4 h-4" />
+          </a>
+
+          <p className="mt-10 text-sm text-[var(--color-text-muted)]">
+            Have unused cloud credits? Write to us:{" "}
+            <a
+              href="mailto:support@pevzner.pro"
+              className="text-[var(--color-accent-orange)] hover:underline"
+            >
+              support@pevzner.pro
+            </a>
+          </p>
+        </motion.div>
+      );
+    }
+
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="step-card text-center py-12"
+        className="step-card"
       >
-        <div className="w-16 h-16 bg-[rgba(139,92,246,0.15)] rounded-full flex items-center justify-center mx-auto mb-6">
-          <CheckCircle2 className="w-8 h-8 text-[var(--color-accent-purple)]" />
+        <div className="mb-6">
+          <div className="w-full h-1.5 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden">
+            <div className="h-full w-full bg-gradient-to-r from-[var(--color-accent-blue)] to-[var(--color-accent-purple)]" />
+          </div>
         </div>
-        <h2 className="text-3xl font-bold mb-4 text-gradient">Опрос завершен!</h2>
+
+        <h2 className="text-3xl font-bold mb-3">
+          You can claim up to{" "}
+          <span className="text-[var(--color-accent-orange)]">
+            {formatCurrency(total)}
+          </span>{" "}
+          in cloud startup credits
+        </h2>
         <p className="text-[var(--color-text-muted)] mb-8">
-          Спасибо за ваши ответы. Мы подготовим индивидуальный результат для вас.
+          Based on your answers, here's what you're eligible for.
         </p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="btn-secondary"
-        >
-          Начать заново
-        </button>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {/* Option 1: Get AI Model Credits */}
+          <div className="p-5 rounded-xl border border-[var(--color-glass-border)] bg-[rgba(255,255,255,0.03)]">
+            <p className="text-sm text-[var(--color-text-muted)] mb-3">
+              Claim your {formatCurrency(total)} in cloud credits and use them
+              for AI models
+            </p>
+            <button
+              onClick={() => setShowPerks(true)}
+              className="btn-primary w-full flex items-center justify-center gap-2"
+            >
+              Get Instructions
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Option 2: Get Cash */}
+          <div className="p-5 rounded-xl border border-[var(--color-glass-border)] bg-[rgba(255,255,255,0.03)]">
+            <p className="text-sm text-[var(--color-text-muted)] mb-3">
+              Receive up to{" "}
+              <span className="text-white font-medium">
+                {formatCurrency(cashAmount)}
+              </span>{" "}
+              in cash by sharing your account access with us
+            </p>
+            <a
+              href="mailto:support@pevzner.pro"
+              className="btn-secondary w-full flex items-center justify-center gap-2"
+            >
+              Get Cash
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+
+        {/* Perk Cards */}
+        <AnimatePresence>
+          {showPerks && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-3 mb-8"
+            >
+              {PERKS.map((perk, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-xl border border-[var(--color-glass-border)] bg-[rgba(255,255,255,0.03)] overflow-hidden"
+                >
+                  <button
+                    onClick={() => togglePerk(idx)}
+                    className="w-full flex items-center justify-between p-4 text-left hover:bg-[rgba(255,255,255,0.03)] transition-colors"
+                  >
+                    <span className="font-semibold">
+                      {perk.title}{" "}
+                      <span className="text-[var(--color-accent-orange)] font-normal">
+                        {perk.amount}
+                      </span>
+                    </span>
+                    {openPerks[idx] ? (
+                      <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+                    )}
+                  </button>
+                  <AnimatePresence>
+                    {openPerks[idx] && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 pb-4">
+                          <ol className="space-y-2 mb-3">
+                            {perk.steps.map((step, sIdx) => (
+                              <li
+                                key={sIdx}
+                                className="flex gap-3 text-sm text-[var(--color-text-muted)]"
+                              >
+                                <span className="text-[var(--color-accent-blue)] font-medium shrink-0">
+                                  {sIdx + 1}.
+                                </span>
+                                <span>{step}</span>
+                              </li>
+                            ))}
+                          </ol>
+                          <div className="font-mono text-xs bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded-lg px-3 py-2 text-[var(--color-text-muted)]">
+                            📌 {perk.note}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <hr className="border-[var(--color-glass-border)] mb-6" />
+        <p className="text-sm text-[var(--color-text-muted)]">
+          Have unused cloud credits you're not using? Write to us:{" "}
+          <a
+            href="mailto:support@pevzner.pro"
+            className="text-[var(--color-accent-orange)] hover:underline"
+          >
+            support@pevzner.pro
+          </a>
+        </p>
       </motion.div>
     );
   }
+
+  const activeQuestion = CREDIT_QUESTIONS[currentStep];
+  const currentAnswer = answers[currentStep];
 
   return (
     <div className="step-card">
       <div className="mb-8">
         <div className="flex justify-between items-end mb-4">
           <span className="text-sm font-medium text-[var(--color-accent-blue)]">
-            Вопрос {currentStep + 1} из {MOCK_QUESTIONS.length}
+            Question {currentStep + 1} of {CREDIT_QUESTIONS.length}
           </span>
           <span className="text-sm text-[var(--color-text-muted)]">
-            {Math.round(((currentStep) / MOCK_QUESTIONS.length) * 100)}% завершено
+            {progressPercent}% complete
           </span>
         </div>
         <div className="w-full h-1.5 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden">
-          <motion.div 
+          <motion.div
             className="h-full bg-gradient-to-r from-[var(--color-accent-blue)] to-[var(--color-accent-purple)]"
             initial={{ width: 0 }}
-            animate={{ width: `${((currentStep) / MOCK_QUESTIONS.length) * 100}%` }}
+            animate={{ width: `${progressPercent}%` }}
             transition={{ duration: 0.3 }}
           />
         </div>
@@ -100,29 +313,21 @@ export default function Quiz() {
             {activeQuestion.question}
           </h2>
 
-          <div className="space-y-3 mb-8">
-            {activeQuestion.options.map((option, idx) => {
-              const isSelected = answers[currentStep] === option;
+          <div className="grid grid-cols-2 gap-3 mb-8">
+            {(["Yes", "No"] as const).map((label) => {
+              const value = label === "Yes";
+              const isSelected = currentAnswer === value;
               return (
                 <button
-                  key={idx}
-                  onClick={() => handleSelectOption(option)}
-                  className={`w-full text-left p-4 rounded-xl border transition-all duration-200 ${
-                    isSelected 
-                      ? "bg-[rgba(139,92,246,0.1)] border-[var(--color-accent-purple)]" 
-                      : "bg-[rgba(255,255,255,0.03)] border-[var(--color-glass-border)] hover:border-[rgba(255,255,255,0.2)]"
+                  key={label}
+                  onClick={() => handleSelectAnswer(value)}
+                  className={`w-full p-4 rounded-xl border text-center font-medium transition-all duration-200 ${
+                    isSelected
+                      ? "bg-[rgba(139,92,246,0.1)] border-[var(--color-accent-purple)] text-white"
+                      : "bg-[rgba(255,255,255,0.03)] border-[var(--color-glass-border)] text-[var(--color-text-muted)] hover:border-[rgba(255,255,255,0.2)]"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                      isSelected ? "border-[var(--color-accent-purple)]" : "border-[var(--color-text-muted)] mt-0.5"
-                    }`}>
-                      {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-accent-purple)]" />}
-                    </div>
-                    <span className={isSelected ? "text-white font-medium" : "text-[var(--color-text-muted)]"}>
-                      {option}
-                    </span>
-                  </div>
+                  {label}
                 </button>
               );
             })}
@@ -131,12 +336,14 @@ export default function Quiz() {
           <div className="flex justify-end">
             <button
               onClick={handleNext}
-              disabled={!answers[currentStep]}
+              disabled={currentAnswer === undefined || currentAnswer === null}
               className={`btn-primary flex items-center gap-2 ${
-                !answers[currentStep] ? "opacity-50 cursor-not-allowed" : ""
+                currentAnswer === undefined || currentAnswer === null
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
               }`}
             >
-              {currentStep === MOCK_QUESTIONS.length - 1 ? "Завершить" : "Далее"}
+              {currentStep === CREDIT_QUESTIONS.length - 1 ? "See Results" : "Next"}
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
