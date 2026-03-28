@@ -7,8 +7,14 @@ echo "🚀 Starting deployment for Pevzner Foundation App..."
 
 # 1. Pull latest code (if in a git repository)
 if [ -d ".git" ]; then
+    echo "📦 Stashing local changes before pull..."
+    git stash --include-untracked || true
+
     echo "📦 Pulling latest changes from git..."
-    git pull origin main || "Failed to pull changes, assuming no remote main branch"
+    git pull origin main || echo "⚠️  Failed to pull changes, assuming no remote main branch"
+
+    echo "📦 Restoring local changes..."
+    git stash pop || true
 fi
 
 # 2. Install dependencies
