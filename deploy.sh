@@ -5,16 +5,17 @@ set -e
 
 echo "🚀 Starting deployment for Pevzner Foundation App..."
 
-# 1. Pull latest code (if in a git repository)
+# 1. Pull latest code safely 
 if [ -d ".git" ]; then
-    echo "📦 Stashing local changes before pull..."
-    git stash --include-untracked || true
+    echo "💾 Backing up database..."
+    cp prisma/dev.db /tmp/dev.db.backup || true
 
     echo "📦 Pulling latest changes from git..."
-    git pull origin main || echo "⚠️  Failed to pull changes, assuming no remote main branch"
+    git fetch origin
+    git reset --hard origin/main || echo "⚠️  Failed to reset, assuming no remote main branch"
 
-    echo "📦 Restoring local changes..."
-    git stash pop || true
+    echo "💾 Restoring database..."
+    cp /tmp/dev.db.backup prisma/dev.db || true
 fi
 
 # 2. Install dependencies
