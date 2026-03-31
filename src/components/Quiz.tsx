@@ -30,11 +30,15 @@ const PERKS = [
     title: "Google Cloud for Startups",
     amount: "$2,000",
     steps: [
-      "Go to cloud.google.com/startup",
-      "Apply with your startup email",
-      "Receive $2,000 in credits within 3-5 business days",
+      "Set up a live website and a corporate email domain (public domains like @gmail.com are rejected)",
+      "Apply to NVIDIA Inception by describing your AI product and its need for GPU computing",
+      "Wait 2-4 weeks for your 'Welcome to NVIDIA Inception' approval email",
+      "Log into the NVIDIA Inception Member Portal, go to 'Benefits', and copy the Google Cloud Partner Code",
+      "Go to cloud.google.com/startup, click 'Apply', and choose the 'Start' package",
+      "Select 'Yes' under affiliated startup community partner, choose 'NVIDIA Inception', and paste your code",
+      "Link your billing account (Google temporarily holds $1 for verification)"
     ],
-    note: "Credits valid for 12 months",
+    note: "Credits activate in 3-5 business days and are valid for 12 months. Bonus: Includes Google Cloud training.",
   },
   {
     title: "AWS Activate",
