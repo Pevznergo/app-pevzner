@@ -18,7 +18,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       authorize: async (credentials) => {
         if (!credentials?.email) throw new Error("Email required");
 
-        const email = credentials.email as string;
+        const email = (credentials.email as string).toLowerCase().trim();
         const user = await prisma.user.findUnique({ 
           where: { email },
           include: { accounts: true }
@@ -27,25 +27,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // 1. Handle OTP Verification if 'code' is provided
         if (credentials.code) {
           const code = credentials.code as string;
+          console.log(`Verifying OTP for ${email}`);
           const tokenRecord = await prisma.verificationToken.findFirst({
             where: { identifier: email, token: code },
           });
 
           if (!tokenRecord || tokenRecord.expires < new Date()) {
+            console.error(`Invalid/expired code for ${email}`);
             throw new Error("Invalid or expired code");
           }
 
           // Mark user as verified
+          console.log(`Setting ${email} to verified...`);
           const updatedUser = await prisma.user.update({
             where: { email },
             data: { emailVerified: new Date() },
           });
 
-          // Clean up token
-          await prisma.verificationToken.delete({
-            where: { identifier_token: { identifier: email, token: code } },
+          // Clean up token safely without risking composite key constraint errors
+          await prisma.verificationToken.deleteMany({
+            where: { identifier: email },
           });
 
+          console.log(`Successfully verified user ${email}`);
           return updatedUser;
         }
 

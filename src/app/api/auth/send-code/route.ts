@@ -6,7 +6,8 @@ export async function POST(req: Request) {
   const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key_for_build");
 
   try {
-    const { email } = await req.json();
+    const rawData = await req.json();
+    const email = rawData.email?.toLowerCase().trim();
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -16,28 +17,12 @@ export async function POST(req: Request) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = new Date(Date.now() + 10 * 60 * 1000); // Expires in 10 minutes
 
-    // Save/Update in database
-    await prisma.verificationToken.upsert({
-      where: {
-        identifier_token: { identifier: email, token: otp }, // Fallback if exists by chance
-      },
-      update: {
-        token: otp,
-        expires,
-      },
-      create: {
-        identifier: email,
-        token: otp,
-        expires,
-      },
-    });
-
-    // To prevent upsert collision with composite strictness, many use deleteMany first
-    // then create to safely overwrite existing active tokens for the same identifier:
+    // First delete any previous active tokens for this email
     await prisma.verificationToken.deleteMany({
       where: { identifier: email },
     });
     
+    // Then create the new token
     await prisma.verificationToken.create({
       data: {
         identifier: email,
