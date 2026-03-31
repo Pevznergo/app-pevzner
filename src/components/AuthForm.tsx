@@ -19,6 +19,45 @@ export default function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  const sendCode = async (targetEmail: string) => {
+    const res = await fetch("/api/auth/send-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: targetEmail }),
+    });
+    return res;
+  };
+
+  const startResendCooldown = () => {
+    setResendCooldown(60);
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) { clearInterval(interval); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleResendCode = async () => {
+    setResendLoading(true);
+    setError("");
+    try {
+      const res = await sendCode(email);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to resend code");
+      }
+      setMessage("A new code has been sent to your email.");
+      startResendCooldown();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setResendLoading(false);
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,8 +77,32 @@ export default function AuthForm() {
         
         setView("verify");
         setMessage("Account created! Please enter the code from your email.");
+        startResendCooldown();
       } else {
-        // Login mode
+        // Step 1: pre-check to get a meaningful error and detect unverified users.
+        // next-auth v5 does not propagate the original error text out of authorize(),
+        // so we call our own endpoint first.
+        const checkRes = await fetch("/api/auth/check-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const checkData = await checkRes.json();
+
+        if (!checkRes.ok) {
+          throw new Error(checkData.error || "Incorrect email or password");
+        }
+
+        if (checkData.status === "UNVERIFIED") {
+          // Registered but email not verified — send a new code and switch to verify view
+          await sendCode(email);
+          setView("verify");
+          setMessage("Your email is not verified yet. A new code has been sent.");
+          startResendCooldown();
+          return;
+        }
+
+        // Step 2: credentials are valid and user is verified — proceed with signIn
         const result = await signIn("credentials", {
           email,
           password,
@@ -47,12 +110,9 @@ export default function AuthForm() {
         });
 
         if (result?.error) {
-          throw new Error(result.error === "CredentialsSignin" ? "Incorrect password" : result.error);
+          throw new Error("Sign in failed. Please try again.");
         }
 
-        // Check if user is verified (we store this in session/token)
-        // For simplicity, we can redirect to /quiz and let it handle verification check
-        // Or we can check here by fetching session or just navigating
         window.location.href = "/quiz";
       }
     } catch (err: any) {
@@ -177,12 +237,27 @@ export default function AuthForm() {
                 required
               />
             </div>
-            <p className="text-xs text-[var(--color-text-muted)] text-center mt-3">
-              Sent to {email} <br/>
-              <button type="button" onClick={() => setView("login")} className="text-[var(--color-accent-blue)] mt-1 hover:underline">
-                Back to Sign In
-              </button>
-            </p>
+            <div className="text-xs text-[var(--color-text-muted)] text-center mt-3 space-y-2">
+              <p>Sent to <span className="text-white">{email}</span></p>
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={resendLoading || resendCooldown > 0}
+                  className="text-[var(--color-accent-blue)] hover:underline disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                >
+                  {resendLoading
+                    ? "Sending..."
+                    : resendCooldown > 0
+                    ? `Resend in ${resendCooldown}s`
+                    : "Resend code"}
+                </button>
+                <span className="opacity-30">|</span>
+                <button type="button" onClick={() => setView("login")} className="hover:text-white transition-colors">
+                  Back to Sign In
+                </button>
+              </div>
+            </div>
           </div>
           <button 
             type="submit" 

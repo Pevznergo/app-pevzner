@@ -64,8 +64,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error("Invalid password");
         }
 
-        // If password is valid but email not verified, we'll handle this in the UI
-        // or return user and let middleware/UI check emailVerified.
+        // If password is valid but email not verified, redirect to verify flow
+        if (!user.emailVerified) {
+          throw new Error("EMAIL_NOT_VERIFIED");
+        }
+
         return user;
       },
     }),
