@@ -36,7 +36,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           // Mark user as verified
-          await prisma.user.update({
+          const updatedUser = await prisma.user.update({
             where: { email },
             data: { emailVerified: new Date() },
           });
@@ -46,7 +46,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             where: { identifier_token: { identifier: email, token: code } },
           });
 
-          return user;
+          return updatedUser;
         }
 
         // 2. Standard Password Login
