@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Quiz from "@/components/Quiz";
+import { prisma } from "@/lib/prisma";
 
 export default async function QuizPage() {
   const session = await auth();
@@ -14,6 +15,15 @@ export default async function QuizPage() {
     // so they can enter the verification code
     redirect(`/auth?email=${encodeURIComponent(session.user.email || "")}&verify=true`);
   }
+
+  const dbUser = await prisma.user.findUnique({
+    where: { email: session.user.email || "" },
+    // @ts-ignore - Prisma TS caching issue
+    select: { quizAnswers: true }
+  });
+
+  // @ts-ignore
+  const hasCompletedQuiz = !!dbUser?.quizAnswers;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
@@ -33,7 +43,7 @@ export default async function QuizPage() {
           </form>
         </div>
         
-        <Quiz />
+        <Quiz hasCompletedQuiz={hasCompletedQuiz} />
       </div>
     </div>
   );

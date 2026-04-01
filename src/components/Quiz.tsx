@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronRight, ChevronDown } from "lucide-react";
 import { saveQuizAnswers } from "@/app/actions/saveQuiz";
+import Script from "next/script";
 
 const CREDIT_QUESTIONS = [
   {
@@ -75,10 +76,10 @@ function formatCurrency(amount: number): string {
   return "$" + amount.toLocaleString("en-US");
 }
 
-export default function Quiz() {
+export default function Quiz({ hasCompletedQuiz = false }: { hasCompletedQuiz?: boolean }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<number, boolean | null>>({});
-  const [isFinished, setIsFinished] = useState(false);
+  const [isFinished, setIsFinished] = useState(hasCompletedQuiz);
   const [showPerks, setShowPerks] = useState(false);
   const [openPerks, setOpenPerks] = useState<Record<number, boolean>>({});
 
@@ -240,6 +241,15 @@ export default function Quiz() {
             support@pevzner.pro
           </a>
         </p>
+
+        <Script id="bitrix-widget" strategy="lazyOnload">
+          {`
+            (function(w,d,u){
+                    var s=d.createElement('script');s.async=true;s.src=u+'?'+(Date.now()/60000|0);
+                    var h=d.getElementsByTagName('script')[0];h.parentNode.insertBefore(s,h);
+            })(window,document,'https://cdn-ru.bitrix24.ru/b37389416/crm/site_button/loader_1_wsatm6.js');
+          `}
+        </Script>
       </motion.div>
     );
   }
