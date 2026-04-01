@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "./lib/prisma";
 import bcrypt from "bcryptjs";
+import { createBitrixLead } from "./lib/bitrix";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -50,6 +51,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           });
 
           console.log(`Successfully verified user ${email}`);
+          
+          // Create lead in Bitrix24
+          createBitrixLead({ 
+            email: updatedUser.email || email, 
+            name: updatedUser.name 
+          }).catch((err) => console.error("Failed to trigger Bitrix lead creation:", err));
+
           return updatedUser;
         }
 
