@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronRight, ChevronDown } from "lucide-react";
+import { saveQuizAnswers } from "@/app/actions/saveQuiz";
 
 const CREDIT_QUESTIONS = [
   {
@@ -44,21 +45,29 @@ const PERKS = [
     title: "AWS Activate",
     amount: "$10,000",
     steps: [
-      "Visit aws.amazon.com/activate",
-      "Complete the Activate application (portfolio companies eligible for $10k)",
-      "Credits applied to your AWS account within 2 weeks",
+      "Apply to NVIDIA Inception with a corporate email and describe your startup's GPU/AI usage",
+      "Wait for your 'Welcome to NVIDIA Inception' approval email",
+      "Log into the NVIDIA Inception Member Portal, go to 'Benefits', and locate the 'AWS Activate' card",
+      "Copy your Organization ID (sometimes called Activation ID or Portfolio Org ID)",
+      "Go to aws.amazon.com/activate, click 'Apply for AWS Activate', and select 'Activate Portfolio'",
+      "Paste your Organization ID and provide your 12-digit AWS Account ID, using the same website and email",
+      "In the description, briefly mention your NVIDIA Inception membership and model training needs"
     ],
-    note: "Requires active AWS account",
+    note: "Approval takes 7-14 days and credits are valid for 2 years. Includes up to $1,500 in Support Credits.",
   },
   {
     title: "Microsoft for Startups",
     amount: "$5,000",
     steps: [
-      "Apply at microsoft.com/en-us/startups",
-      "Get accepted into the Founders Hub",
-      "Receive up to $5,000 in Azure credits + GitHub Copilot + other benefits",
+      "Ensure you are accepted into NVIDIA Inception and add the membership to your LinkedIn company profile",
+      "Log into the NVIDIA Inception Member Portal, go to 'Benefits', and find your Microsoft for Startups Referral Code",
+      "Go to foundershub.startups.microsoft.com and log in using a personal Microsoft account linked to your LinkedIn",
+      "Select NVIDIA Inception as your partner during the application process",
+      "Describe your MVP, highlight your Azure AI or GPU needs, and include a product demo video link",
+      "Complete Business Verification to unlock the $5,000 Level 2 tier",
+      "Wait ~3 days for approval and activate your credits within 90 days"
     ],
-    note: "Must have an active product/prototype",
+    note: "Credits are valid for 180 days. Bonus: Includes priority Azure OpenAI access, GitHub Enterprise, and Microsoft 365.",
   },
 ];
 
@@ -82,6 +91,7 @@ export default function Quiz() {
       setCurrentStep((prev) => prev + 1);
     } else {
       setIsFinished(true);
+      saveQuizAnswers(answers).catch(console.error);
     }
   };
 
@@ -89,9 +99,7 @@ export default function Quiz() {
     setOpenPerks((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
-  const total = CREDIT_QUESTIONS.reduce((sum, q, idx) => {
-    return answers[idx] === true ? sum + q.credit : sum;
-  }, 0);
+  const total = CREDIT_QUESTIONS.reduce((sum, q) => sum + q.credit, 0);
 
   const cashAmount = Math.floor(total * 0.3);
   const progressPercent = isFinished
@@ -99,51 +107,6 @@ export default function Quiz() {
     : Math.round((currentStep / CREDIT_QUESTIONS.length) * 100);
 
   if (isFinished) {
-    if (total === 0) {
-      return (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="step-card"
-        >
-          <div className="mb-6">
-            <div className="w-full h-1.5 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden">
-              <div className="h-full w-full bg-gradient-to-r from-[var(--color-accent-blue)] to-[var(--color-accent-purple)]" />
-            </div>
-          </div>
-
-          <h2 className="text-3xl font-bold mb-3">
-            You may still have credits available
-          </h2>
-          <p className="text-[var(--color-text-muted)] mb-6">
-            Many startups qualify for cloud credits they haven't claimed yet.
-          </p>
-          <p className="text-[var(--color-text-muted)] mb-8">
-            Even if you haven't received credits from Google, AWS, or Microsoft,
-            you may still be eligible. Reach out and we'll help you figure it out.
-          </p>
-
-          <a
-            href="mailto:support@pevzner.pro"
-            className="btn-primary inline-flex items-center gap-2"
-          >
-            Contact Us
-            <ArrowRight className="w-4 h-4" />
-          </a>
-
-          <p className="mt-10 text-sm text-[var(--color-text-muted)]">
-            Have unused cloud credits? Write to us:{" "}
-            <a
-              href="mailto:support@pevzner.pro"
-              className="text-[var(--color-accent-orange)] hover:underline"
-            >
-              support@pevzner.pro
-            </a>
-          </p>
-        </motion.div>
-      );
-    }
-
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
