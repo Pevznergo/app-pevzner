@@ -22,9 +22,10 @@ export async function POST(req: NextRequest) {
     // optional body, defaults apply
   }
 
-  const country = (body.country as string) || "ru";
+  const country = (body.country as string) || "in";
   const period = Number(body.period) || 30;
   const version = Number(body.version) || 3;
+  const proxyProtocol = (body.type as string) || "socks5";
 
   const setting = await prisma.adminSetting.findUnique({ where: { key: "proxy6_key" } });
   if (!setting?.value) {
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
   }
 
   const apiKey = setting.value;
-  const url = `https://px6.link/api/${apiKey}/buy?count=1&period=${period}&country=${country}&version=${version}`;
+  const url = `https://px6.link/api/${apiKey}/buy?count=1&period=${period}&country=${country}&version=${version}&type=${proxyProtocol}`;
 
   let data: any;
   try {
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No proxy returned from proxy6.net" }, { status: 500 });
   }
 
-  const proxyType = firstProxy.type === "socks" ? "socks5" : "http";
+  const proxyType = (firstProxy.type === "socks5" || firstProxy.type === "socks") ? "socks5" : "http";
   const proxy = `${proxyType}://${firstProxy.user}:${firstProxy.pass}@${firstProxy.host}:${firstProxy.port}`;
 
   return NextResponse.json({ proxy });

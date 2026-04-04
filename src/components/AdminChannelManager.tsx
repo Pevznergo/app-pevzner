@@ -71,9 +71,10 @@ export default function AdminChannelManager() {
   const [formBaseUrl, setFormBaseUrl] = useState("");
   const [formProxy, setFormProxy] = useState("");
   const [generating, setGenerating] = useState(false);
-  const [genCountry, setGenCountry] = useState("ru");
+  const [genCountry, setGenCountry] = useState("in");
   const [genPeriod, setGenPeriod] = useState(30);
   const [genVersion, setGenVersion] = useState(3);
+  const [genProxyType, setGenProxyType] = useState("socks5");
   const [showGenOptions, setShowGenOptions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -126,7 +127,7 @@ export default function AdminChannelManager() {
       const res = await fetch("/api/admin/proxy/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ country: genCountry, period: genPeriod, version: genVersion }),
+        body: JSON.stringify({ country: genCountry, period: genPeriod, version: genVersion, type: genProxyType }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -344,7 +345,7 @@ export default function AdminChannelManager() {
                 type="text"
                 value={formProxy}
                 onChange={(e) => setFormProxy(e.target.value)}
-                placeholder="http://user:pass@host:port"
+                placeholder="socks5://user:pass@host:port"
                 className="flex-1 bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded-lg px-3 py-2 text-sm text-white font-mono placeholder-[var(--color-text-muted)] focus:outline-none focus:border-purple-500/60"
               />
               <button
@@ -388,15 +389,26 @@ export default function AdminChannelManager() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">Type</label>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">Protocol</label>
+                  <select
+                    value={genProxyType}
+                    onChange={(e) => setGenProxyType(e.target.value)}
+                    className="bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded px-2 py-1 text-xs text-white focus:outline-none"
+                  >
+                    <option value="socks5" className="bg-[#1a1a2e]">SOCKS5</option>
+                    <option value="http" className="bg-[#1a1a2e]">HTTP</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">IP version</label>
                   <select
                     value={genVersion}
                     onChange={(e) => setGenVersion(Number(e.target.value))}
                     className="bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded px-2 py-1 text-xs text-white focus:outline-none"
                   >
-                    <option value={3} className="bg-[#1a1a2e]">IPv4 Shared (3)</option>
-                    <option value={4} className="bg-[#1a1a2e]">IPv4 (4)</option>
-                    <option value={6} className="bg-[#1a1a2e]">IPv6 (6)</option>
+                    <option value={3} className="bg-[#1a1a2e]">IPv4 (3)</option>
+                    <option value={6} className="bg-[#1a1a2e]">IPv4 Shared (6)</option>
+                    <option value={4} className="bg-[#1a1a2e]">IPv6 (4)</option>
                   </select>
                 </div>
               </div>
