@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, RefreshCw, Archive, ArchiveRestore, Settings, Zap, Trash2 } from "lucide-react";
+import { Eye, EyeOff, RefreshCw, Archive, ArchiveRestore, Settings, Zap, Trash2, FlaskConical } from "lucide-react";
 
 type Template = { id: string; name: string };
 
@@ -78,6 +78,11 @@ export default function AdminChannelManager() {
   const [showGenOptions, setShowGenOptions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  // Per-channel test state
+  const [testingId, setTestingId] = useState<string | null>(null);
+  type TestResult = { ok: boolean; ms: number; error?: string };
+  const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
 
   const fetchAll = async () => {
     setLoading(true);
@@ -187,8 +192,20 @@ export default function AdminChannelManager() {
     }
   };
 
-  const deleteChannel = async (channel: Channel) => {
-    if (!confirm(`Delete channel "${channel.name}"?\n\nThis will remove it from newapi and the local database. This cannot be undone.`)) return;
+  const testChannel = async (channel: Channel) => {
+    setTestingId(channel.id);
+    try {
+      const res = await fetch(`/api/admin/channels/${channel.id}/test`, { method: "POST" });
+      const data = await res.json();
+      setTestResults((prev) => ({ ...prev, [channel.id]: data }));
+    } catch {
+      setTestResults((prev) => ({ ...prev, [channel.id]: { ok: false, ms: 0, error: "Network error" } }));
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  const deleteChannel = async (channel: Channel) => {    if (!confirm(`Delete channel "${channel.name}"?\n\nThis will remove it from newapi and the local database. This cannot be undone.`)) return;
     const res = await fetch(`/api/admin/channels/${channel.id}`, { method: "DELETE" });
     if (res.ok) {
       setChannels((prev) => prev.filter((c) => c.id !== channel.id));
@@ -549,9 +566,32 @@ export default function AdminChannelManager() {
                   </div>
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-[var(--color-glass-border)] flex flex-wrap gap-4">
+                <div className="mt-3 pt-3 border-t border-[var(--color-glass-border)] flex flex-wrap items-center gap-4">
                   <MaskedText text={ch.apiKey} label="key" />
                   {ch.proxy && <MaskedText text={ch.proxy} label="proxy" />}
+                  <div className="ml-auto flex items-center gap-2">
+                    {testResults[ch.id] && (
+                      <span
+                        className={`text-xs font-mono ${
+                          testResults[ch.id].ok ? "text-green-400" : "text-red-400"
+                        }`}
+                        title={testResults[ch.id].error}
+                      >
+                        {testResults[ch.id].ok
+                          ? `${testResults[ch.id].ms} ms`
+                          : testResults[ch.id].error ?? "error"}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => testChannel(ch)}
+                      disabled={testingId === ch.id}
+                      className="flex items-center gap-1 text-xs px-2.5 py-1 bg-[rgba(59,130,246,0.12)] border border-blue-500/25 rounded text-blue-300 hover:bg-[rgba(59,130,246,0.22)] transition-colors disabled:opacity-50"
+                      title="Test channel with google/gemini-3.1-flash-lite-preview"
+                    >
+                      <FlaskConical className="w-3 h-3" />
+                      {testingId === ch.id ? "Testing..." : "Test"}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
