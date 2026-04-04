@@ -28,13 +28,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // 1. Handle OTP Verification if 'code' is provided
         if (credentials.code) {
           const code = credentials.code as string;
-          console.log(`Verifying OTP for ${email}`);
-          const tokenRecord = await prisma.verificationToken.findFirst({
-            where: { identifier: email, token: code },
-          });
+          console.log(`Verifying OTP for ${email}, code length: ${code.length}`);
+          let tokenRecord;
+          try {
+            tokenRecord = await prisma.verificationToken.findFirst({
+              where: { identifier: email, token: code },
+            });
+          } catch (dbErr) {
+            console.error(`DB error looking up OTP for ${email}:`, dbErr);
+            throw new Error("Database error during verification");
+          }
 
-          if (!tokenRecord || tokenRecord.expires < new Date()) {
-            console.error(`Invalid/expired code for ${email}`);
+          if (!tokenRecord) {
+            console.error(`Token not found for ${email} with code ${code}`);
+            throw new Error("Invalid or expired code");
+          }
+          if (tokenRecord.expires < new Date()) {
+            console.error(`Token expired for ${email}, expired at ${tokenRecord.expires}`);
             throw new Error("Invalid or expired code");
           }
 

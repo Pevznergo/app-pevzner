@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { Resend } from "resend";
 import prisma from "@/lib/prisma";
 
 export async function POST(req: Request) {
@@ -26,15 +27,30 @@ export async function POST(req: Request) {
       },
     });
 
-    // Send verification code immediately after registration
+    // Send verification code directly (avoid unreliable internal HTTP fetch)
     try {
-      await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/send-code`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+      const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key_for_build");
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = new Date(Date.now() + 10 * 60 * 1000);
+
+      await prisma.verificationToken.deleteMany({ where: { identifier: email } });
+      await prisma.verificationToken.create({ data: { identifier: email, token: otp, expires } });
+
+      await resend.emails.send({
+        from: process.env.EMAIL_FROM || "Pevzner Foundation <noreply@aporto.tech>",
+        to: email,
+        subject: "Your verification code",
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Verification Code</h2>
+            <p>Your one-time login code:</p>
+            <h1 style="letter-spacing: 5px; font-size: 36px; color: #3b82f6;">${otp}</h1>
+            <p>This code is valid for 10 minutes.</p>
+          </div>
+        `,
       });
     } catch (e) {
-      console.error("Failed to trigger initial email verification:", e);
+      console.error("Failed to send verification email:", e);
     }
 
     return NextResponse.json({ success: true, user: { email: user.email } });
