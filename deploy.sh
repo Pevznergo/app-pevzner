@@ -25,6 +25,11 @@ npm install
 # 3. Generate Prisma client and apply pending migrations
 echo "🗄️ Applying database migrations..."
 npx prisma generate
+
+# Baseline: mark the initial migration as applied if the DB already has tables
+# but no migration history (P3005). Safe to run every time — ignored if already done.
+npx prisma migrate resolve --applied "20260404080548_share_admin" 2>/dev/null || true
+
 npx prisma migrate deploy
 
 # 4. Clean cache and Build Next.js application
