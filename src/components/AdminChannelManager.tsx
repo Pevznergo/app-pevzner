@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, RefreshCw, Archive, ArchiveRestore, Settings, Zap } from "lucide-react";
+import { Eye, EyeOff, RefreshCw, Archive, ArchiveRestore, Settings, Zap, Trash2 } from "lucide-react";
 
 type Template = { id: string; name: string };
 
@@ -17,6 +17,8 @@ type Channel = {
   channelType: number;
   status: string;
   createdAt: string;
+  newapiStatus: number | null;  // 1=active, 0=disabled, null=unknown
+  usedQuota: number | null;
 };
 
 const CHANNEL_TYPES: { value: number; label: string }[] = [
@@ -181,6 +183,17 @@ export default function AdminChannelManager() {
     if (res.ok) {
       const data = await res.json();
       setChannels((prev) => prev.map((c) => (c.id === channel.id ? data.channel : c)));
+    }
+  };
+
+  const deleteChannel = async (channel: Channel) => {
+    if (!confirm(`Delete channel "${channel.name}"?\n\nThis will remove it from newapi and the local database. This cannot be undone.`)) return;
+    const res = await fetch(`/api/admin/channels/${channel.id}`, { method: "DELETE" });
+    if (res.ok) {
+      setChannels((prev) => prev.filter((c) => c.id !== channel.id));
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Failed to delete channel");
     }
   };
 
@@ -446,6 +459,25 @@ export default function AdminChannelManager() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
+                      {/* newapi live status dot */}
+                      {ch.newapiId != null && (
+                        <span
+                          className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                            ch.newapiStatus === 1
+                              ? "bg-green-400"
+                              : ch.newapiStatus === 0
+                              ? "bg-red-400"
+                              : "bg-gray-500"
+                          }`}
+                          title={
+                            ch.newapiStatus === 1
+                              ? "Active in newapi"
+                              : ch.newapiStatus === 0
+                              ? "Disabled in newapi"
+                              : "Status unknown"
+                          }
+                        />
+                      )}
                       <span className={`font-medium text-white ${ch.status === "archived" ? "line-through" : ""}`}>
                         {ch.name}
                       </span>
@@ -471,6 +503,14 @@ export default function AdminChannelManager() {
                     <p className="text-xs text-[var(--color-text-muted)] font-mono truncate">
                       {ch.baseUrl}
                     </p>
+                    {ch.usedQuota != null && ch.usedQuota > 0 && (
+                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                        Used:{" "}
+                        <span className="text-white font-mono">
+                          ${(ch.usedQuota / 500000).toFixed(4)}
+                        </span>
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-xs text-[var(--color-text-muted)]">
@@ -486,6 +526,13 @@ export default function AdminChannelManager() {
                       ) : (
                         <ArchiveRestore className="w-4 h-4" />
                       )}
+                    </button>
+                    <button
+                      onClick={() => deleteChannel(ch)}
+                      className="text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
+                      title="Delete channel"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

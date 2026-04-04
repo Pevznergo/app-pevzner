@@ -20,7 +20,44 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json({ channels });
+  // Fetch live status + quota from newapi and merge
+  const newapiUrl = process.env.NEWAPI_URL;
+  const newapiToken = process.env.NEWAPI_TOKEN;
+  const liveMap = new Map<number, { newapiStatus: number; usedQuota: number }>();
+
+  if (newapiUrl && newapiToken) {
+    try {
+      const res = await fetch(`${newapiUrl}/api/channel?page_size=500`, {
+        headers: { Authorization: `Bearer ${newapiToken}` },
+        next: { revalidate: 0 },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const items: any[] = data?.data?.items ?? data?.data ?? [];
+        for (const item of items) {
+          if (item.id != null) {
+            liveMap.set(item.id, {
+              newapiStatus: item.status ?? 1,
+              usedQuota: item.used_quota ?? 0,
+            });
+          }
+        }
+      }
+    } catch {
+      // Live data unavailable — return local data only
+    }
+  }
+
+  const enriched = channels.map((ch) => {
+    const live = ch.newapiId != null ? liveMap.get(ch.newapiId) : undefined;
+    return {
+      ...ch,
+      newapiStatus: live?.newapiStatus ?? null,
+      usedQuota: live?.usedQuota ?? null,
+    };
+  });
+
+  return NextResponse.json({ channels: enriched });
 }
 
 export async function POST(req: NextRequest) {

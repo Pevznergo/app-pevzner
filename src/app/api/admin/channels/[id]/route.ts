@@ -69,3 +69,40 @@ export async function PUT(
 
   return NextResponse.json({ channel: updated });
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  if (!(await requireAdmin())) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+
+  const channel = await prisma.channel.findUnique({ where: { id } });
+  if (!channel) {
+    return NextResponse.json({ error: "Channel not found" }, { status: 404 });
+  }
+
+  // Delete from newapi first
+  if (channel.newapiId != null) {
+    const newapiUrl = process.env.NEWAPI_URL;
+    const newapiToken = process.env.NEWAPI_TOKEN;
+    if (newapiUrl && newapiToken) {
+      try {
+        await fetch(`${newapiUrl}/api/channel/${channel.newapiId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${newapiToken}` },
+        });
+      } catch (err) {
+        console.error("Failed to delete channel from newapi:", err);
+        // Continue with local deletion even if newapi call fails
+      }
+    }
+  }
+
+  await prisma.channel.delete({ where: { id } });
+  return NextResponse.json({ success: true });
+}
+
