@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Eye, EyeOff, Copy, Check, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Eye, EyeOff, Copy, Check, RefreshCw, CheckCircle, Archive, AlertTriangle } from "lucide-react";
 
 type Credential = {
   id: string;
@@ -9,6 +9,9 @@ type Credential = {
   portalLabel: string | null;
   username: string;
   password: string;
+  status: string;
+  isDuplicate: boolean;
+  totalPortals: number;
   createdAt: string;
   userEmail: string | null;
   userName: string | null;
@@ -19,12 +22,27 @@ type Credential = {
   } | null;
 };
 
+type StatusFilter = "all" | "pending" | "done" | "archived";
+
 const PORTAL_NAMES: Record<string, string> = {
   aws: "AWS",
   "google-vertex": "Google Vertex",
   azure: "Azure",
   replit: "Replit",
   custom: "Custom",
+};
+
+const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "pending", label: "Pending" },
+  { id: "done", label: "Done" },
+  { id: "archived", label: "Archived" },
+];
+
+const STATUS_STYLES: Record<string, string> = {
+  pending: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+  done: "bg-green-500/10 text-green-400 border-green-500/20",
+  archived: "bg-[rgba(255,255,255,0.06)] text-[var(--color-text-muted)] border-[var(--color-glass-border)]",
 };
 
 function CopyButton({ text }: { text: string }) {
@@ -38,7 +56,7 @@ function CopyButton({ text }: { text: string }) {
     <button
       onClick={handleCopy}
       className="ml-2 text-[var(--color-text-muted)] hover:text-white transition-colors"
-      title="Copy to clipboard"
+      title="Copy"
     >
       {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
     </button>
@@ -68,110 +86,231 @@ export default function AdminCredentialList() {
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [updating, setUpdating] = useState<string | null>(null);
 
-  const fetchCredentials = async () => {
+  const fetchCredentials = useCallback(async (p: number, filter: StatusFilter) => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/credentials");
+      const params = new URLSearchParams({ page: String(p) });
+      if (filter !== "all") params.set("status", filter);
+      const res = await fetch(`/api/admin/credentials?${params}`);
       if (!res.ok) throw new Error("Failed to load credentials");
       const data = await res.json();
       setCredentials(data.credentials);
+      setTotal(data.total);
+      setTotalPages(data.totalPages);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchCredentials();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="text-center py-20 text-[var(--color-text-muted)]">
-        Loading credentials...
-      </div>
-    );
-  }
+  useEffect(() => {
+    fetchCredentials(page, statusFilter);
+  }, [page, statusFilter, fetchCredentials]);
 
-  if (error) {
-    return (
-      <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-4 rounded-lg text-center">
-        {error}
-      </div>
-    );
-  }
+  const handleFilterChange = (f: StatusFilter) => {
+    setStatusFilter(f);
+    setPage(1);
+  };
 
-  if (credentials.length === 0) {
-    return (
-      <div className="step-card text-center py-16">
-        <p className="text-[var(--color-text-muted)] text-lg">No credentials submitted yet.</p>
-      </div>
-    );
-  }
+  const updateStatus = async (id: string, status: string) => {
+    setUpdating(id);
+    try {
+      const res = await fetch(`/api/admin/credentials/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) return;
+      // Update in-place or remove from list if filter no longer matches
+      setCredentials((prev) =>
+        statusFilter === "all"
+          ? prev.map((c) => (c.id === id ? { ...c, status } : c))
+          : prev.filter((c) => c.id !== id)
+      );
+      if (statusFilter !== "all") setTotal((t) => t - 1);
+    } finally {
+      setUpdating(null);
+    }
+  };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-[var(--color-text-muted)] text-sm">
-          {credentials.length} credential{credentials.length !== 1 ? "s" : ""} total
-        </p>
-        <button
-          onClick={fetchCredentials}
-          className="flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-white transition-colors"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
+      {/* Filters + refresh */}
+      <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+        <div className="flex gap-1 bg-[rgba(255,255,255,0.03)] border border-[var(--color-glass-border)] rounded-lg p-1">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => handleFilterChange(f.id)}
+              className={`px-3 py-1 rounded text-sm transition-all ${
+                statusFilter === f.id
+                  ? "bg-[rgba(139,92,246,0.2)] text-white border border-purple-500/40"
+                  : "text-[var(--color-text-muted)] hover:text-white"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-[var(--color-text-muted)]">
+            {total} total
+          </p>
+          <button
+            onClick={() => fetchCredentials(page, statusFilter)}
+            className="flex items-center gap-1 text-sm text-[var(--color-text-muted)] hover:text-white transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-4">
-        {credentials.map((cred) => (
-          <div key={cred.id} className="step-card hover:transform-none">
-            <div className="flex items-start justify-between flex-wrap gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 rounded text-xs font-mono bg-[rgba(139,92,246,0.2)] text-purple-300 border border-purple-500/30">
-                    {cred.portal === "custom" && cred.portalLabel
-                      ? cred.portalLabel
-                      : PORTAL_NAMES[cred.portal] ?? cred.portal}
-                  </span>
+      {loading ? (
+        <div className="text-center py-20 text-[var(--color-text-muted)]">Loading...</div>
+      ) : error ? (
+        <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-4 rounded-lg text-center">
+          {error}
+        </div>
+      ) : credentials.length === 0 ? (
+        <div className="step-card text-center py-16">
+          <p className="text-[var(--color-text-muted)] text-lg">No credentials found.</p>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-4">
+            {credentials.map((cred) => (
+              <div
+                key={cred.id}
+                className={`step-card hover:transform-none ${cred.status === "archived" ? "opacity-60" : ""}`}
+              >
+                <div className="flex items-start justify-between flex-wrap gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="px-2 py-0.5 rounded text-xs font-mono bg-[rgba(139,92,246,0.2)] text-purple-300 border border-purple-500/30">
+                        {cred.portal === "custom" && cred.portalLabel
+                          ? cred.portalLabel
+                          : PORTAL_NAMES[cred.portal] ?? cred.portal}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded text-xs border ${STATUS_STYLES[cred.status] ?? ""}`}>
+                        {cred.status}
+                      </span>
+                      {cred.isDuplicate && (
+                        <span
+                          className="flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                          title="Same portal + login already exists from another account"
+                        >
+                          <AlertTriangle className="w-3 h-3" />
+                          duplicate
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-white font-medium">{cred.userEmail ?? "—"}</p>
+                    {cred.userName && (
+                      <p className="text-[var(--color-text-muted)] text-sm">{cred.userName}</p>
+                    )}
+                    {cred.totalPortals > 1 && (
+                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                        {cred.totalPortals} portals submitted
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="text-right text-xs text-[var(--color-text-muted)]">
+                      <p>Submitted: {new Date(cred.createdAt).toLocaleString()}</p>
+                      {cred.latestConsent && (
+                        <>
+                          <p>IP: {cred.latestConsent.ipAddress}</p>
+                          <p>ToS: {cred.latestConsent.documentVersion}</p>
+                        </>
+                      )}
+                    </div>
+                    {/* Action buttons */}
+                    {cred.status !== "archived" && (
+                      <div className="flex gap-2">
+                        {cred.status !== "done" && (
+                          <button
+                            onClick={() => updateStatus(cred.id, "done")}
+                            disabled={updating === cred.id}
+                            className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                            title="Mark as done"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            Done
+                          </button>
+                        )}
+                        <button
+                          onClick={() => updateStatus(cred.id, "archived")}
+                          disabled={updating === cred.id}
+                          className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-[rgba(255,255,255,0.05)] text-[var(--color-text-muted)] border border-[var(--color-glass-border)] hover:text-white transition-colors disabled:opacity-50"
+                          title="Archive"
+                        >
+                          <Archive className="w-3 h-3" />
+                          Archive
+                        </button>
+                      </div>
+                    )}
+                    {cred.status === "archived" && (
+                      <button
+                        onClick={() => updateStatus(cred.id, "pending")}
+                        disabled={updating === cred.id}
+                        className="text-xs px-2 py-1 rounded text-[var(--color-text-muted)] border border-[var(--color-glass-border)] hover:text-white transition-colors disabled:opacity-50"
+                      >
+                        Restore
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <p className="text-white font-medium">{cred.userEmail ?? "—"}</p>
-                {cred.userName && (
-                  <p className="text-[var(--color-text-muted)] text-sm">{cred.userName}</p>
-                )}
-              </div>
-              <div className="text-right text-xs text-[var(--color-text-muted)]">
-                <p>Submitted: {new Date(cred.createdAt).toLocaleString()}</p>
-                {cred.latestConsent && (
-                  <>
-                    <p>Consent: {new Date(cred.latestConsent.timestamp).toLocaleString()}</p>
-                    <p>IP: {cred.latestConsent.ipAddress}</p>
-                    <p>ToS: {cred.latestConsent.documentVersion}</p>
-                  </>
-                )}
-              </div>
-            </div>
 
-            <div className="mt-4 pt-4 border-t border-[var(--color-glass-border)] grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-[var(--color-text-muted)] mb-1">Username / Login</p>
-                <div className="flex items-center gap-1 font-mono text-sm text-white">
-                  <span>{cred.username}</span>
-                  <CopyButton text={cred.username} />
+                <div className="mt-4 pt-4 border-t border-[var(--color-glass-border)] grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-[var(--color-text-muted)] mb-1">Username / Login</p>
+                    <div className="flex items-center gap-1 font-mono text-sm text-white">
+                      <span>{cred.username}</span>
+                      <CopyButton text={cred.username} />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--color-text-muted)] mb-1">Password</p>
+                    <PasswordCell password={cred.password} />
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-xs text-[var(--color-text-muted)] mb-1">Password</p>
-                <PasswordCell password={cred.password} />
-              </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <button
+                onClick={() => setPage((p) => p - 1)}
+                disabled={page === 1}
+                className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-glass-border)] text-[var(--color-text-muted)] hover:text-white disabled:opacity-30 transition-colors"
+              >
+                ← Prev
+              </button>
+              <span className="text-sm text-[var(--color-text-muted)]">
+                {page} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page === totalPages}
+                className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-glass-border)] text-[var(--color-text-muted)] hover:text-white disabled:opacity-30 transition-colors"
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

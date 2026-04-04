@@ -29,6 +29,7 @@ npx prisma generate
 # Baseline: mark the initial migration as applied if the DB already has tables
 # but no migration history (P3005). Safe to run every time — ignored if already done.
 npx prisma migrate resolve --applied "20260404080548_share_admin" 2>/dev/null || true
+npx prisma migrate resolve --applied "20260404125455_channel_management" 2>/dev/null || true
 
 npx prisma migrate deploy
 

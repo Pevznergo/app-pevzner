@@ -34,6 +34,7 @@ model PortalCredential {
   passwordEnc  String       // AES-256-GCM ciphertext, base64
   passwordIv   String       // AES-GCM IV, base64
   passwordTag  String       // AES-GCM auth tag, base64
+  status       String       @default("pending") // "pending" | "done" | "archived"
   createdAt    DateTime     @default(now())
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   consentLogs  ConsentLog[] // 1-to-many: each submission creates a new consent record

@@ -3,30 +3,55 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/encryption";
 
-export async function GET(req: NextRequest) {
+async function requireAdmin() {
   const session = await auth();
+  if (!session?.user) return null;
+  const email = session.user.email ?? "";
+  if (!process.env.ADMIN_EMAIL || email !== process.env.ADMIN_EMAIL) return null;
+  return session;
+}
 
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const PAGE_SIZE = 20;
 
-  const userEmail = session.user.email ?? "";
-  const adminEmail = process.env.ADMIN_EMAIL;
-
-  if (!adminEmail || userEmail !== adminEmail) {
+export async function GET(req: NextRequest) {
+  if (!(await requireAdmin())) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const credentials = await prisma.portalCredential.findMany({
-    include: {
-      user: { select: { email: true, name: true } },
-      consentLogs: {
-        orderBy: { timestamp: "desc" },
-        take: 1,
+  const { searchParams } = new URL(req.url);
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+  const statusFilter = searchParams.get("status"); // "pending" | "done" | "archived" | null (all)
+
+  const where = statusFilter ? { status: statusFilter } : {};
+
+  const [total, credentials] = await Promise.all([
+    prisma.portalCredential.count({ where }),
+    prisma.portalCredential.findMany({
+      where,
+      include: {
+        user: { select: { email: true, name: true } },
+        consentLogs: { orderBy: { timestamp: "desc" }, take: 1 },
       },
-    },
-    orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+  ]);
+
+  // Duplicate detection: (portal + username) pairs that appear more than once across all users
+  const dupeGroups = await prisma.portalCredential.groupBy({
+    by: ["portal", "username"],
+    _count: { id: true },
+    having: { id: { _count: { gt: 1 } } },
   });
+  const dupeKeys = new Set(dupeGroups.map((r) => `${r.portal}::${r.username}`));
+
+  // Account counter: how many portals each user has submitted
+  const userCounts = await prisma.portalCredential.groupBy({
+    by: ["userId"],
+    _count: { id: true },
+  });
+  const userCountMap = new Map(userCounts.map((r) => [r.userId, r._count.id]));
 
   const result = credentials.map((cred) => {
     let password = "";
@@ -42,6 +67,9 @@ export async function GET(req: NextRequest) {
       portalLabel: cred.portalLabel,
       username: cred.username,
       password,
+      status: cred.status,
+      isDuplicate: dupeKeys.has(`${cred.portal}::${cred.username}`),
+      totalPortals: userCountMap.get(cred.userId) ?? 1,
       createdAt: cred.createdAt,
       userEmail: cred.user.email,
       userName: cred.user.name,
@@ -55,5 +83,11 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  return NextResponse.json({ credentials: result });
+  return NextResponse.json({
+    credentials: result,
+    total,
+    page,
+    pageSize: PAGE_SIZE,
+    totalPages: Math.ceil(total / PAGE_SIZE),
+  });
 }

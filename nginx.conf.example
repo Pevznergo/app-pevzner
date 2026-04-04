@@ -1,0 +1,21 @@
+# Nginx config snippet for Pevzner Foundation app
+# Add these proxy headers inside your location block so the app receives the real client IP.
+#
+# Example location block:
+#
+#   location / {
+#       proxy_pass         http://127.0.0.1:3008;
+#       proxy_http_version 1.1;
+#       proxy_set_header   Upgrade $http_upgrade;
+#       proxy_set_header   Connection 'upgrade';
+#       proxy_set_header   Host $host;
+#       proxy_cache_bypass $http_upgrade;
+#
+#       # ── Real IP forwarding (required for consent logs) ──────────────────
+#       proxy_set_header   X-Real-IP        $remote_addr;
+#       proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+#       proxy_set_header   X-Forwarded-Proto $scheme;
+#   }
+#
+# After editing nginx.conf, reload without downtime:
+#   sudo nginx -t && sudo systemctl reload nginx
