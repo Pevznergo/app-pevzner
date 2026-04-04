@@ -9,10 +9,22 @@ type Portal = (typeof VALID_PORTALS)[number];
 const DOCUMENT_VERSION = "tos-v1.0";
 
 function getClientIp(req: NextRequest): string {
-  // x-forwarded-for may be a comma-separated list; take the first
+  // x-forwarded-for is the real IP when behind nginx/proxy.
+  // Take the first entry (leftmost = original client).
   const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
-  return req.headers.get("x-real-ip") ?? "unknown";
+  if (forwarded) {
+    const ip = forwarded.split(",")[0].trim();
+    return normalizeIp(ip);
+  }
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) return normalizeIp(realIp);
+  return "unknown";
+}
+
+// Strip IPv6-mapped IPv4 prefix (::ffff:1.2.3.4 → 1.2.3.4)
+function normalizeIp(ip: string): string {
+  if (ip.startsWith("::ffff:")) return ip.slice(7);
+  return ip;
 }
 
 export async function POST(req: NextRequest) {

@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import AdminCredentialList from "@/components/AdminCredentialList";
+import AdminTabs from "@/components/AdminTabs";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -31,7 +31,7 @@ export default async function AdminPage() {
           <h1 className="text-lg font-semibold">
             <span className="text-gradient">Admin</span>
             <span className="text-[var(--color-text-muted)] font-normal ml-2 text-sm">
-              — Credential Dashboard
+              — Dashboard
             </span>
           </h1>
           <div className="flex items-center gap-4">
@@ -46,8 +46,9 @@ export default async function AdminPage() {
           </div>
         </div>
 
-        <AdminCredentialList />
+        <AdminTabs />
       </div>
     </div>
   );
 }
+
