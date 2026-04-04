@@ -7,7 +7,7 @@ import { Mail, ArrowRight, ShieldCheck, Lock, UserPlus, LogIn } from "lucide-rea
 
 type AuthView = "login" | "register" | "verify";
 
-export default function AuthForm() {
+export default function AuthForm({ redirectTo = "/quiz" }: { redirectTo?: string }) {
   const searchParams = useSearchParams();
   const initialVerify = searchParams.get("verify") === "true";
   const initialEmail = searchParams.get("email") || "";
@@ -113,7 +113,7 @@ export default function AuthForm() {
           throw new Error("Sign in failed. Please try again.");
         }
 
-        window.location.href = "/quiz";
+        window.location.href = redirectTo;
       }
     } catch (err: any) {
       setError(err.message);

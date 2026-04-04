@@ -90,6 +90,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id;
         token.emailVerified = (user as any).emailVerified;
+        token.isAdmin =
+          (user as any).isAdmin === true ||
+          (user.email != null && user.email === process.env.ADMIN_EMAIL);
       }
       return token;
     },
@@ -97,6 +100,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token && session.user) {
         (session.user as any).id = token.id;
         (session.user as any).emailVerified = token.emailVerified;
+        (session.user as any).isAdmin = token.isAdmin ?? false;
       }
       return session;
     },

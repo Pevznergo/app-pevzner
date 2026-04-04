@@ -11,15 +11,48 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  password      String?
-  image         String?
-  quizAnswers   String?
-  accounts      Account[]
-  sessions      Session[]
+  id                String             @id @default(cuid())
+  name              String?
+  email             String?            @unique
+  emailVerified     DateTime?
+  password          String?
+  image             String?
+  quizAnswers       String?
+  isAdmin           Boolean            @default(false)
+  accounts          Account[]
+  sessions          Session[]
+  portalCredentials PortalCredential[]
+  consentLogs       ConsentLog[]
+}
+
+model PortalCredential {
+  id           String       @id @default(cuid())
+  userId       String
+  portal       String       // 'aws' | 'google-vertex' | 'azure' | 'replit' | 'custom'
+  portalLabel  String?      // For custom portals only
+  username     String
+  passwordEnc  String       // AES-256-GCM ciphertext, base64
+  passwordIv   String       // AES-GCM IV, base64
+  passwordTag  String       // AES-GCM auth tag, base64
+  createdAt    DateTime     @default(now())
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consentLogs  ConsentLog[] // 1-to-many: each submission creates a new consent record
+
+  @@unique([userId, portal])
+}
+
+model ConsentLog {
+  id              String           @id @default(cuid())
+  userId          String
+  email           String
+  ipAddress       String
+  userAgent       String
+  timestamp       DateTime         @default(now())
+  documentVersion String           // e.g. 'tos-v1.0'
+  action          String           // 'portal_credential_submission'
+  credentialId    String           // NOT unique — each resubmission gets a new consent record
+  credential      PortalCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Account {
