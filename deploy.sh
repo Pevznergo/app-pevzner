@@ -30,6 +30,8 @@ npx prisma generate
 # but no migration history (P3005). Safe to run every time — ignored if already done.
 npx prisma migrate resolve --applied "20260404080548_share_admin" 2>/dev/null || true
 npx prisma migrate resolve --applied "20260404125455_channel_management" 2>/dev/null || true
+npx prisma migrate resolve --applied "20260404152050_credential_status" 2>/dev/null || true
+npx prisma migrate resolve --applied "20260404153718_remove_credential_unique" 2>/dev/null || true
 
 npx prisma migrate deploy
 

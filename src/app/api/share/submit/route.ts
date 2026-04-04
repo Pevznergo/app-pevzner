@@ -87,17 +87,8 @@ export async function POST(req: NextRequest) {
 
   try {
     await prisma.$transaction(async (tx) => {
-      // Upsert credential — @@unique([userId, portal]) handles duplicate portals as updates
-      const credential = await tx.portalCredential.upsert({
-        where: { userId_portal: { userId, portal: portal as string } },
-        update: {
-          portalLabel: portal === "custom" ? (portalLabel as string).trim() : null,
-          username: (username as string).trim(),
-          passwordEnc: encrypted.enc,
-          passwordIv: encrypted.iv,
-          passwordTag: encrypted.tag,
-        },
-        create: {
+      const credential = await tx.portalCredential.create({
+        data: {
           userId,
           portal: portal as string,
           portalLabel: portal === "custom" ? (portalLabel as string).trim() : null,
@@ -108,7 +99,6 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Create new consent log (always create, even on update — each submission = new consent)
       await tx.consentLog.create({
         data: {
           userId,
