@@ -14,7 +14,7 @@ const PORTALS = [
 type PortalValue = (typeof PORTALS)[number]["value"];
 
 export default function ShareForm() {
-  const [portal, setPortal] = useState<PortalValue | "">("");
+  const [portal, setPortal] = useState<PortalValue | "">("replit");
   const [portalLabel, setPortalLabel] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
