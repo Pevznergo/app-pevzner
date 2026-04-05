@@ -48,6 +48,7 @@ export async function PUT(
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${newapiToken}`,
+            "New-Api-User": "1",
           },
           body: JSON.stringify({
             id: channel.newapiId,
@@ -93,7 +94,7 @@ export async function DELETE(
       try {
         await fetch(`${newapiUrl}/api/channel/${channel.newapiId}`, {
           method: "DELETE",
-          headers: { Authorization: `Bearer ${newapiToken}` },
+          headers: { Authorization: `Bearer ${newapiToken}`, "New-Api-User": "1" },
         });
       } catch (err) {
         console.error("Failed to delete channel from newapi:", err);

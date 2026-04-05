@@ -44,6 +44,7 @@ export async function POST(
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${newapiToken}`,
+        "New-Api-User": "1",
       },
       body: JSON.stringify({
         model: TEST_MODEL,

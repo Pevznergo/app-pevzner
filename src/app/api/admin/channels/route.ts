@@ -28,7 +28,7 @@ export async function GET() {
   if (newapiUrl && newapiToken) {
     try {
       const res = await fetch(`${newapiUrl}/api/channel?page_size=500`, {
-        headers: { Authorization: `Bearer ${newapiToken}` },
+        headers: { Authorization: `Bearer ${newapiToken}`, "New-Api-User": "1" },
         next: { revalidate: 0 },
       });
       if (res.ok) {
@@ -115,6 +115,7 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${newapiToken}`,
+        "New-Api-User": "1",
       },
       body: JSON.stringify({
         name,
