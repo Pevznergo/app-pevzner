@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No proxy returned from proxy6.net" }, { status: 500 });
   }
 
-  const proxyType = (firstProxy.type === "socks5" || firstProxy.type === "socks") ? "socks5" : "http";
-  const proxy = `${proxyType}://${firstProxy.user}:${firstProxy.pass}@${firstProxy.host}:${firstProxy.port}`;
+  // Use the requested protocol — don't trust proxy6's returned type field
+  const proxy = `${proxyProtocol}://${firstProxy.user}:${firstProxy.pass}@${firstProxy.host}:${firstProxy.port}`;
 
   return NextResponse.json({ proxy });
 }
