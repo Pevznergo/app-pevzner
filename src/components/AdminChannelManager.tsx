@@ -71,6 +71,7 @@ export default function AdminChannelManager() {
   const [formBaseUrl, setFormBaseUrl] = useState("");
   const [formProxy, setFormProxy] = useState("");
   const [replitSlug, setReplitSlug] = useState("");
+  const [generating, setGenerating] = useState(false);
   const [genCountry, setGenCountry] = useState("in");
   const [genPeriod, setGenPeriod] = useState(30);
   const [genVersion, setGenVersion] = useState(3);
