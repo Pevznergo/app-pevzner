@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import AdminTabs from "@/components/AdminTabs";
 import type { Metadata } from "next";
@@ -38,7 +38,12 @@ export default async function AdminPage() {
             <span className="text-sm text-[var(--color-text-muted)]">
               {session.user.email}
             </span>
-            <form action="/api/auth/signout" method="POST">
+            <form
+              action={async () => {
+                "use server";
+                await signOut({ redirectTo: "/auth" });
+              }}
+            >
               <button className="text-sm text-[var(--color-accent-orange)] hover:underline">
                 Sign out
               </button>
