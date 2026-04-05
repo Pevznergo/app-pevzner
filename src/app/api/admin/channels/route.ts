@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
   // Create channel in newapi
   let newapiId: number | null = null;
   try {
-    const newapiRes = await fetch(`${newapiUrl}/api/channel`, {
+    const newapiRes = await fetch(`${newapiUrl}/api/channel/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -118,21 +118,44 @@ export async function POST(req: NextRequest) {
         "New-Api-User": "1",
       },
       body: JSON.stringify({
-        name,
-        type,
-        key: (apiKey as string).trim(),
-        models,
-        model_mapping: modelMapping ?? "",
-        base_url: (baseUrl as string).trim(),
-        proxy: proxy && typeof proxy === "string" ? proxy.trim() : "",
-        status: 1,
+        mode: "single",
+        channel: {
+          name,
+          type,
+          key: (apiKey as string).trim(),
+          models,
+          model_mapping: modelMapping ?? "",
+          base_url: (baseUrl as string).trim(),
+          proxy: proxy && typeof proxy === "string" ? proxy.trim() : "",
+          status: 1,
+          group: "default",
+        },
       }),
     });
 
     if (newapiRes.ok) {
       const newapiData = await newapiRes.json();
-      if (newapiData.success && newapiData.data?.id) {
-        newapiId = newapiData.data.id;
+      if (newapiData.success) {
+        // v0.11.4 doesn't return the id in the create response — fetch by name
+        try {
+          const listRes = await fetch(
+            `${newapiUrl}/api/channel/?page_size=500`,
+            {
+              headers: {
+                Authorization: `Bearer ${newapiToken}`,
+                "New-Api-User": "1",
+              },
+            }
+          );
+          if (listRes.ok) {
+            const listData = await listRes.json();
+            const items: any[] = listData?.data?.items ?? [];
+            const match = items.find((ch: any) => ch.name === name);
+            if (match?.id) newapiId = match.id;
+          }
+        } catch {
+          // newapiId stays null — not critical
+        }
       }
     } else {
       const errText = await newapiRes.text();
