@@ -126,7 +126,10 @@ export async function POST(req: NextRequest) {
           models,
           model_mapping: modelMapping ?? "",
           base_url: (baseUrl as string).trim(),
-          proxy: proxy && typeof proxy === "string" ? proxy.trim() : "",
+          // In new-api v0.11.4 proxy lives inside the `setting` JSON string
+          setting: JSON.stringify({
+            proxy: proxy && typeof proxy === "string" ? proxy.trim() : "",
+          }),
           status: 1,
           group: "default",
         },

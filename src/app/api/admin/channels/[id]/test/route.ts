@@ -10,8 +10,6 @@ async function requireAdmin() {
   return session;
 }
 
-const TEST_MODEL = "google/gemini-3.1-flash-lite-preview";
-
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,6 +23,9 @@ export async function POST(
   if (!channel) {
     return NextResponse.json({ error: "Channel not found" }, { status: 404 });
   }
+  if (!channel.newapiId) {
+    return NextResponse.json({ error: "Channel has no newapi ID" }, { status: 400 });
+  }
 
   const newapiUrl = process.env.NEWAPI_URL;
   const newapiToken = process.env.NEWAPI_TOKEN;
@@ -32,38 +33,26 @@ export async function POST(
     return NextResponse.json({ error: "NEWAPI_URL or NEWAPI_TOKEN not configured" }, { status: 500 });
   }
 
-  // Route to specific channel via channel_id param (one-api admin feature)
-  const url = channel.newapiId
-    ? `${newapiUrl}/v1/chat/completions?channel_id=${channel.newapiId}`
-    : `${newapiUrl}/v1/chat/completions`;
-
   const start = Date.now();
   try {
-    const res = await fetch(url, {
-      method: "POST",
+    const res = await fetch(`${newapiUrl}/api/channel/test/${channel.newapiId}`, {
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${newapiToken}`,
         "New-Api-User": "1",
       },
-      body: JSON.stringify({
-        model: TEST_MODEL,
-        messages: [{ role: "user", content: "hi" }],
-        max_tokens: 5,
-      }),
       signal: AbortSignal.timeout(30_000),
     });
 
     const ms = Date.now() - start;
+    const data = await res.json();
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => res.statusText);
-      return NextResponse.json({ ok: false, ms, error: `${res.status}: ${text}` });
+    if (!res.ok || !data.success) {
+      return NextResponse.json({ ok: false, ms, error: data.message || `${res.status}` });
     }
 
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content ?? "";
-    return NextResponse.json({ ok: true, ms, content });
+    // new-api returns time in seconds — convert to ms for display
+    const reportedMs = data.time != null ? Math.round(data.time * 1000) : ms;
+    return NextResponse.json({ ok: true, ms: reportedMs });
   } catch (err: any) {
     const ms = Date.now() - start;
     const message = err?.name === "TimeoutError" ? "Timeout (30s)" : (err?.message ?? "Request failed");
