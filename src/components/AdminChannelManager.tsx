@@ -70,7 +70,7 @@ export default function AdminChannelManager() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [formBaseUrl, setFormBaseUrl] = useState("");
   const [formProxy, setFormProxy] = useState("");
-  const [generating, setGenerating] = useState(false);
+  const [replitSlug, setReplitSlug] = useState("");
   const [genCountry, setGenCountry] = useState("in");
   const [genPeriod, setGenPeriod] = useState(30);
   const [genVersion, setGenVersion] = useState(3);
@@ -350,6 +350,37 @@ export default function AdminChannelManager() {
               required
               className="w-full bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded-lg px-3 py-2 text-sm text-white font-mono placeholder-[var(--color-text-muted)] focus:outline-none focus:border-purple-500/60"
             />
+            <div className="mt-1.5 flex items-center gap-2">
+              <span className="text-xs text-[var(--color-text-muted)] whitespace-nowrap">Replit:</span>
+              <input
+                type="text"
+                value={replitSlug}
+                onChange={(e) => setReplitSlug(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (replitSlug.trim()) {
+                      setFormBaseUrl(`https://${replitSlug.trim()}.replit.app/api`);
+                      setReplitSlug("");
+                    }
+                  }
+                }}
+                placeholder="unifi909ck"
+                className="flex-1 bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded px-2 py-1 text-xs text-white font-mono placeholder-[var(--color-text-muted)] focus:outline-none focus:border-blue-500/60"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (replitSlug.trim()) {
+                    setFormBaseUrl(`https://${replitSlug.trim()}.replit.app/api`);
+                    setReplitSlug("");
+                  }
+                }}
+                className="text-xs px-2.5 py-1 bg-[rgba(59,130,246,0.12)] border border-blue-500/25 rounded text-blue-300 hover:bg-[rgba(59,130,246,0.22)] transition-colors whitespace-nowrap"
+              >
+                Apply
+              </button>
+            </div>
           </div>
 
           <div>
