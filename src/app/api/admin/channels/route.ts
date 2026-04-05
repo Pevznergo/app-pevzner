@@ -72,11 +72,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { name, templateId, apiKey, baseUrl, proxy, channelType } = body as Record<string, unknown>;
+  const { name: rawName, templateId, apiKey, baseUrl, proxy, channelType } = body as Record<string, unknown>;
 
-  if (!name || typeof name !== "string" || !name.trim()) {
-    return NextResponse.json({ error: "Name is required" }, { status: 400 });
-  }
+  const TYPE_LABELS: Record<number, string> = {
+    20: "openrouter", 1: "openai", 3: "azure", 14: "anthropic", 24: "gemini", 0: "custom",
+  };
+  const typeNum = typeof channelType === "number" ? channelType : 20;
+  const autoName = `${TYPE_LABELS[typeNum] ?? "channel"}-${Date.now().toString(36).slice(-5)}`;
+  const name = rawName && typeof rawName === "string" && rawName.trim() ? rawName.trim() : autoName;
   if (!apiKey || typeof apiKey !== "string" || !apiKey.trim()) {
     return NextResponse.json({ error: "API key is required" }, { status: 400 });
   }
@@ -84,7 +87,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Base URL is required" }, { status: 400 });
   }
 
-  const type = typeof channelType === "number" ? channelType : 20;
+  const type = typeof channelType === "number" ? channelType : typeNum;
 
   // Get models + mapping from template if provided
   let models = "";
@@ -114,16 +117,14 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${newapiToken}`,
       },
       body: JSON.stringify({
-        channel: {
-          name: (name as string).trim(),
-          type,
-          key: (apiKey as string).trim(),
-          models,
-          model_mapping: modelMapping ?? "",
-          base_url: (baseUrl as string).trim(),
-          proxy: proxy && typeof proxy === "string" ? proxy.trim() : "",
-          status: 1,
-        },
+        name,
+        type,
+        key: (apiKey as string).trim(),
+        models,
+        model_mapping: modelMapping ?? "",
+        base_url: (baseUrl as string).trim(),
+        proxy: proxy && typeof proxy === "string" ? proxy.trim() : "",
+        status: 1,
       }),
     });
 

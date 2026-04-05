@@ -274,8 +274,7 @@ export default function AdminChannelManager() {
                 type="text"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                placeholder="e.g. openrouter-prod"
-                required
+                placeholder="e.g. openrouter-prod (auto if empty)"
                 className="w-full bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded-lg px-3 py-2 text-sm text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:border-purple-500/60"
               />
             </div>
