@@ -61,6 +61,11 @@ export default function AdminChannelManager() {
   const [proxy6Key, setProxy6Key] = useState("");
   const [savingKey, setSavingKey] = useState(false);
   const [keySaved, setKeySaved] = useState(false);
+  const [defaultCountry, setDefaultCountry] = useState("in");
+  const [defaultPeriod, setDefaultPeriod] = useState(1);
+  const [defaultVersion, setDefaultVersion] = useState(3);
+  const [savingDefaults, setSavingDefaults] = useState(false);
+  const [defaultsSaved, setDefaultsSaved] = useState(false);
 
   // Create form
   const [formName, setFormName] = useState("");
@@ -73,7 +78,7 @@ export default function AdminChannelManager() {
   const [replitSlug, setReplitSlug] = useState("");
   const [generating, setGenerating] = useState(false);
   const [genCountry, setGenCountry] = useState("in");
-  const [genPeriod, setGenPeriod] = useState(30);
+  const [genPeriod, setGenPeriod] = useState(1);
   const [genVersion, setGenVersion] = useState(3);
   const [genProxyType, setGenProxyType] = useState("socks5");
   const [showGenOptions, setShowGenOptions] = useState(false);
@@ -99,17 +104,34 @@ export default function AdminChannelManager() {
     }
   };
 
-  const fetchProxy6Key = async () => {
-    const res = await fetch("/api/admin/settings/proxy6_key");
-    if (res.ok) {
-      const data = await res.json();
-      if (data.value) setProxy6Key(data.value);
+  const fetchSettings = async () => {
+    const [keyRes, countryRes, periodRes, versionRes] = await Promise.all([
+      fetch("/api/admin/settings/proxy6_key"),
+      fetch("/api/admin/settings/proxy_default_country"),
+      fetch("/api/admin/settings/proxy_default_period"),
+      fetch("/api/admin/settings/proxy_default_version"),
+    ]);
+    if (keyRes.ok) {
+      const d = await keyRes.json();
+      if (d.value) setProxy6Key(d.value);
+    }
+    if (countryRes.ok) {
+      const d = await countryRes.json();
+      if (d.value) { setDefaultCountry(d.value); setGenCountry(d.value); }
+    }
+    if (periodRes.ok) {
+      const d = await periodRes.json();
+      if (d.value) { const n = Math.max(1, Number(d.value)); setDefaultPeriod(n); setGenPeriod(n); }
+    }
+    if (versionRes.ok) {
+      const d = await versionRes.json();
+      if (d.value) { const n = Number(d.value); setDefaultVersion(n); setGenVersion(n); }
     }
   };
 
   useEffect(() => {
     fetchAll();
-    fetchProxy6Key();
+    fetchSettings();
   }, []);
 
   const saveProxy6Key = async () => {
@@ -124,6 +146,36 @@ export default function AdminChannelManager() {
       setTimeout(() => setKeySaved(false), 2000);
     } finally {
       setSavingKey(false);
+    }
+  };
+
+  const saveProxyDefaults = async () => {
+    setSavingDefaults(true);
+    try {
+      await Promise.all([
+        fetch("/api/admin/settings/proxy_default_country", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: defaultCountry }),
+        }),
+        fetch("/api/admin/settings/proxy_default_period", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: String(defaultPeriod) }),
+        }),
+        fetch("/api/admin/settings/proxy_default_version", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: String(defaultVersion) }),
+        }),
+      ]);
+      setGenCountry(defaultCountry);
+      setGenPeriod(defaultPeriod);
+      setGenVersion(defaultVersion);
+      setDefaultsSaved(true);
+      setTimeout(() => setDefaultsSaved(false), 2000);
+    } finally {
+      setSavingDefaults(false);
     }
   };
 
@@ -254,6 +306,52 @@ export default function AdminChannelManager() {
                   {keySaved ? "Saved!" : savingKey ? "Saving..." : "Save"}
                 </button>
               </div>
+            </div>
+            <div className="pt-2 border-t border-[var(--color-glass-border)]">
+              <p className="text-xs text-[var(--color-text-muted)] mb-2">Proxy generation defaults</p>
+              <div className="flex gap-3 flex-wrap mb-3">
+                <div>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">Country</label>
+                  <input
+                    type="text"
+                    value={defaultCountry}
+                    onChange={(e) => setDefaultCountry(e.target.value)}
+                    maxLength={2}
+                    placeholder="in"
+                    className="w-14 bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded px-2 py-1 text-xs text-white font-mono focus:outline-none focus:border-purple-500/60"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">Period (days)</label>
+                  <input
+                    type="number"
+                    value={defaultPeriod}
+                    onChange={(e) => setDefaultPeriod(Math.max(1, Number(e.target.value)))}
+                    min={1}
+                    max={365}
+                    className="w-16 bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-purple-500/60"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">IP type</label>
+                  <select
+                    value={defaultVersion}
+                    onChange={(e) => setDefaultVersion(Number(e.target.value))}
+                    className="bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-purple-500/60"
+                  >
+                    <option value={3} className="bg-[#1a1a2e]">IPv4 Dedicated</option>
+                    <option value={6} className="bg-[#1a1a2e]">IPv4 Shared</option>
+                    <option value={4} className="bg-[#1a1a2e]">IPv6</option>
+                  </select>
+                </div>
+              </div>
+              <button
+                onClick={saveProxyDefaults}
+                disabled={savingDefaults}
+                className="btn-primary text-sm px-4 py-2 disabled:opacity-50 whitespace-nowrap"
+              >
+                {defaultsSaved ? "Saved!" : savingDefaults ? "Saving..." : "Save Defaults"}
+              </button>
             </div>
           </div>
         )}
@@ -454,9 +552,9 @@ export default function AdminChannelManager() {
                     onChange={(e) => setGenVersion(Number(e.target.value))}
                     className="bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded px-2 py-1 text-xs text-white focus:outline-none"
                   >
-                    <option value={3} className="bg-[#1a1a2e]">IPv4 (3)</option>
-                    <option value={6} className="bg-[#1a1a2e]">IPv4 Shared (6)</option>
-                    <option value={4} className="bg-[#1a1a2e]">IPv6 (4)</option>
+                    <option value={3} className="bg-[#1a1a2e]">IPv4 Dedicated</option>
+                    <option value={6} className="bg-[#1a1a2e]">IPv4 Shared</option>
+                    <option value={4} className="bg-[#1a1a2e]">IPv6</option>
                   </select>
                 </div>
               </div>

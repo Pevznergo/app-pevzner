@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   }
 
   const country = (body.country as string) || "in";
-  const period = Number(body.period) || 30;
+  const period = Number(body.period) || 1;
   const version = Number(body.version) || 3;
   const proxyProtocol = (body.type as string) || "socks5";
 
