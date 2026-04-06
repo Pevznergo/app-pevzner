@@ -34,9 +34,9 @@ type Perk = { title: string; amount: string; steps: Step[]; note: string };
 
 const NVIDIA_PREREQ_STEPS: Step[] = [
   {
-    text: "Apply at nvidia.com/en-us/startups/join",
-    url: "https://www.nvidia.com/en-us/startups/join/",
-    urlText: "nvidia.com/en-us/startups/join",
+    text: "Apply at nvidia.com/en-us/startups/",
+    url: "https://www.nvidia.com/en-us/startups/",
+    urlText: "nvidia.com/en-us/startups/",
   },
   { text: "Describe your AI product + GPU needs" },
   { text: "Wait 2-4 weeks for approval email" },
@@ -470,11 +470,10 @@ export default function Quiz({
                 <button
                   key={label}
                   onClick={() => handleSelectAnswer(value)}
-                  className={`w-full p-4 rounded-xl border text-center font-medium transition-all duration-200 ${
-                    isSelected
+                  className={`w-full p-4 rounded-xl border text-center font-medium transition-all duration-200 ${isSelected
                       ? "bg-[rgba(139,92,246,0.1)] border-[var(--color-accent-purple)] text-white"
                       : "bg-[rgba(255,255,255,0.03)] border-[var(--color-glass-border)] text-[var(--color-text-muted)] hover:border-[rgba(255,255,255,0.2)]"
-                  }`}
+                    }`}
                 >
                   {label}
                 </button>
@@ -486,11 +485,10 @@ export default function Quiz({
             <button
               onClick={handleNext}
               disabled={currentAnswer === undefined || currentAnswer === null}
-              className={`btn-primary flex items-center gap-2 ${
-                currentAnswer === undefined || currentAnswer === null
+              className={`btn-primary flex items-center gap-2 ${currentAnswer === undefined || currentAnswer === null
                   ? "opacity-50 cursor-not-allowed"
                   : ""
-              }`}
+                }`}
             >
               {currentStep === CREDIT_QUESTIONS.length - 1
                 ? "See Results"
