@@ -63,7 +63,7 @@ export default function AdminChannelManager() {
   const [keySaved, setKeySaved] = useState(false);
   const [defaultCountry, setDefaultCountry] = useState("in");
   const [defaultPeriod, setDefaultPeriod] = useState(1);
-  const [defaultVersion, setDefaultVersion] = useState(3);
+  const [defaultVersion, setDefaultVersion] = useState(4);
   const [savingDefaults, setSavingDefaults] = useState(false);
   const [defaultsSaved, setDefaultsSaved] = useState(false);
 
@@ -79,7 +79,7 @@ export default function AdminChannelManager() {
   const [generating, setGenerating] = useState(false);
   const [genCountry, setGenCountry] = useState("in");
   const [genPeriod, setGenPeriod] = useState(1);
-  const [genVersion, setGenVersion] = useState(3);
+  const [genVersion, setGenVersion] = useState(4);
   const [genProxyType, setGenProxyType] = useState("socks5");
   const [showGenOptions, setShowGenOptions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -339,9 +339,9 @@ export default function AdminChannelManager() {
                     onChange={(e) => setDefaultVersion(Number(e.target.value))}
                     className="bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-purple-500/60"
                   >
-                    <option value={3} className="bg-[#1a1a2e]">IPv4 Dedicated</option>
-                    <option value={6} className="bg-[#1a1a2e]">IPv4 Shared</option>
-                    <option value={4} className="bg-[#1a1a2e]">IPv6</option>
+                    <option value={4} className="bg-[#1a1a2e]">IPv4 Dedicated</option>
+                    <option value={3} className="bg-[#1a1a2e]">IPv4 Shared</option>
+                    <option value={6} className="bg-[#1a1a2e]">IPv6</option>
                   </select>
                 </div>
               </div>
@@ -552,9 +552,9 @@ export default function AdminChannelManager() {
                     onChange={(e) => setGenVersion(Number(e.target.value))}
                     className="bg-[rgba(255,255,255,0.05)] border border-[var(--color-glass-border)] rounded px-2 py-1 text-xs text-white focus:outline-none"
                   >
-                    <option value={3} className="bg-[#1a1a2e]">IPv4 Dedicated</option>
-                    <option value={6} className="bg-[#1a1a2e]">IPv4 Shared</option>
-                    <option value={4} className="bg-[#1a1a2e]">IPv6</option>
+                    <option value={4} className="bg-[#1a1a2e]">IPv4 Dedicated</option>
+                    <option value={3} className="bg-[#1a1a2e]">IPv4 Shared</option>
+                    <option value={6} className="bg-[#1a1a2e]">IPv6</option>
                   </select>
                 </div>
               </div>
