@@ -19,6 +19,10 @@ type Channel = {
   createdAt: string;
   newapiStatus: number | null;  // 1=active, 0=disabled, null=unknown
   usedQuota: number | null;
+  lastTestAt: string | null;
+  lastTestOk: boolean | null;
+  lastTestMs: number | null;
+  lastTestError: string | null;
 };
 
 const CHANNEL_TYPES: { value: number; label: string }[] = [
@@ -699,18 +703,27 @@ export default function AdminChannelManager() {
                   <MaskedText text={ch.apiKey} label="key" />
                   {ch.proxy && <MaskedText text={ch.proxy} label="proxy" />}
                   <div className="ml-auto flex items-center gap-2">
-                    {testResults[ch.id] && (
-                      <span
-                        className={`text-xs font-mono ${
-                          testResults[ch.id].ok ? "text-green-400" : "text-red-400"
-                        }`}
-                        title={testResults[ch.id].error}
-                      >
-                        {testResults[ch.id].ok
-                          ? `${testResults[ch.id].ms} ms`
-                          : testResults[ch.id].error ?? "error"}
-                      </span>
-                    )}
+                    {(() => {
+                      const live = testResults[ch.id];
+                      const persisted = ch.lastTestAt != null;
+                      const result = live ?? (persisted ? { ok: ch.lastTestOk!, ms: ch.lastTestMs!, error: ch.lastTestError ?? undefined } : null);
+                      if (!result) return null;
+                      return (
+                        <span
+                          className={`text-xs font-mono ${result.ok ? "text-green-400" : "text-red-400"}`}
+                          title={result.error ?? (persisted && !live ? `Last tested: ${new Date(ch.lastTestAt!).toLocaleString()}` : undefined)}
+                        >
+                          {result.ok
+                            ? `${result.ms} ms`
+                            : result.error ?? "error"}
+                          {persisted && !live && (
+                            <span className="text-[var(--color-text-muted)] ml-1 font-sans">
+                              {new Date(ch.lastTestAt!).toLocaleDateString()}
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })()}
                     <button
                       onClick={() => testChannel(ch)}
                       disabled={testingId === ch.id}

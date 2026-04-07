@@ -74,8 +74,12 @@ model Channel {
   apiKey      String           // upstream API key, stored plaintext (admin-only page)
   proxy       String?          // formatted as http://user:pass@host:port
   channelType Int              @default(20) // 20=OpenRouter, 1=OpenAI, 3=Azure, 14=Anthropic, 24=Gemini, 0=Custom
-  status      String           @default("active") // "active" | "archived"
-  createdAt   DateTime         @default(now())
+  status        String           @default("active") // "active" | "archived"
+  createdAt     DateTime         @default(now())
+  lastTestAt    DateTime?
+  lastTestOk    Boolean?
+  lastTestMs    Int?
+  lastTestError String?
 }
 
 model AdminSetting {

@@ -10,7 +10,7 @@ async function requireAdmin() {
   return session;
 }
 
-const VALID_STATUSES = ["pending", "done", "archived"] as const;
+const VALID_STATUSES = ["pending", "done", "archived", "banned"] as const;
 
 export async function PUT(
   req: NextRequest,

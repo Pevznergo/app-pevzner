@@ -47,15 +47,28 @@ export async function POST(
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      return NextResponse.json({ ok: false, ms, error: data.message || `${res.status}` });
+      const errorMsg = data.message || `${res.status}`;
+      await prisma.channel.update({
+        where: { id },
+        data: { lastTestAt: new Date(), lastTestOk: false, lastTestMs: ms, lastTestError: errorMsg },
+      });
+      return NextResponse.json({ ok: false, ms, error: errorMsg });
     }
 
     // new-api returns time in seconds — convert to ms for display
     const reportedMs = data.time != null ? Math.round(data.time * 1000) : ms;
+    await prisma.channel.update({
+      where: { id },
+      data: { lastTestAt: new Date(), lastTestOk: true, lastTestMs: reportedMs, lastTestError: null },
+    });
     return NextResponse.json({ ok: true, ms: reportedMs });
   } catch (err: any) {
     const ms = Date.now() - start;
     const message = err?.name === "TimeoutError" ? "Timeout (30s)" : (err?.message ?? "Request failed");
+    await prisma.channel.update({
+      where: { id },
+      data: { lastTestAt: new Date(), lastTestOk: false, lastTestMs: ms, lastTestError: message },
+    }).catch(() => {});
     return NextResponse.json({ ok: false, ms, error: message });
   }
 }

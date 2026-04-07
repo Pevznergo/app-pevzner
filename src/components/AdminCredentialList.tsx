@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Eye, EyeOff, Copy, Check, RefreshCw, CheckCircle, Archive, AlertTriangle } from "lucide-react";
+import { Eye, EyeOff, Copy, Check, RefreshCw, CheckCircle, Archive, AlertTriangle, Ban } from "lucide-react";
 
 type Credential = {
   id: string;
@@ -22,7 +22,7 @@ type Credential = {
   } | null;
 };
 
-type StatusFilter = "all" | "pending" | "done" | "archived";
+type StatusFilter = "all" | "pending" | "done" | "archived" | "banned";
 
 const PORTAL_NAMES: Record<string, string> = {
   aws: "AWS",
@@ -37,12 +37,14 @@ const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
   { id: "pending", label: "Pending" },
   { id: "done", label: "Done" },
   { id: "archived", label: "Archived" },
+  { id: "banned", label: "Banned" },
 ];
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
   done: "bg-green-500/10 text-green-400 border-green-500/20",
   archived: "bg-[rgba(255,255,255,0.06)] text-[var(--color-text-muted)] border-[var(--color-glass-border)]",
+  banned: "bg-red-500/10 text-red-400 border-red-500/20",
 };
 
 function CopyButton({ text }: { text: string }) {
@@ -190,7 +192,7 @@ export default function AdminCredentialList() {
             {credentials.map((cred) => (
               <div
                 key={cred.id}
-                className={`step-card hover:transform-none ${cred.status === "archived" ? "opacity-60" : ""}`}
+                className={`step-card hover:transform-none ${cred.status === "archived" || cred.status === "banned" ? "opacity-60" : ""}`}
               >
                 <div className="flex items-start justify-between flex-wrap gap-4">
                   <div>
@@ -234,7 +236,7 @@ export default function AdminCredentialList() {
                       )}
                     </div>
                     {/* Action buttons */}
-                    {cred.status !== "archived" && (
+                    {cred.status !== "archived" && cred.status !== "banned" && (
                       <div className="flex gap-2">
                         {cred.status !== "done" && (
                           <button
@@ -248,6 +250,15 @@ export default function AdminCredentialList() {
                           </button>
                         )}
                         <button
+                          onClick={() => updateStatus(cred.id, "banned")}
+                          disabled={updating === cred.id}
+                          className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                          title="Ban"
+                        >
+                          <Ban className="w-3 h-3" />
+                          Ban
+                        </button>
+                        <button
                           onClick={() => updateStatus(cred.id, "archived")}
                           disabled={updating === cred.id}
                           className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-[rgba(255,255,255,0.05)] text-[var(--color-text-muted)] border border-[var(--color-glass-border)] hover:text-white transition-colors disabled:opacity-50"
@@ -258,7 +269,7 @@ export default function AdminCredentialList() {
                         </button>
                       </div>
                     )}
-                    {cred.status === "archived" && (
+                    {(cred.status === "archived" || cred.status === "banned") && (
                       <button
                         onClick={() => updateStatus(cred.id, "pending")}
                         disabled={updating === cred.id}

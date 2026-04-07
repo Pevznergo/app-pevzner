@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Trash2, Plus, RefreshCw } from "lucide-react";
+import { Trash2, Plus, RefreshCw, Pencil, Check, X } from "lucide-react";
 
 type Template = {
   id: string;
@@ -22,6 +22,14 @@ export default function AdminTemplateManager() {
   const [formMapping, setFormMapping] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editModels, setEditModels] = useState("");
+  const [editMapping, setEditMapping] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
 
   const fetchTemplates = async () => {
     setLoading(true);
@@ -83,6 +91,52 @@ export default function AdminTemplateManager() {
       setSubmitError("Request failed");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const startEdit = (t: Template) => {
+    setEditingId(t.id);
+    setEditName(t.name);
+    setEditModels(t.models);
+    setEditMapping(t.modelMapping ?? "");
+    setEditError("");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditError("");
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    setEditError("");
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/admin/templates/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName.trim(),
+          models: editModels.trim(),
+          modelMapping: editMapping.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEditError(data.error ?? "Failed to update template");
+        return;
+      }
+      setTemplates((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? { ...t, name: data.template.name, models: data.template.models, modelMapping: data.template.modelMapping }
+            : t
+        )
+      );
+      setEditingId(null);
+    } catch {
+      setEditError("Request failed");
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -175,34 +229,100 @@ export default function AdminTemplateManager() {
           <div className="space-y-3">
             {templates.map((t) => (
               <div key={t.id} className="step-card hover:transform-none">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-white">{t.name}</span>
-                      {t._count.channels > 0 && (
-                        <span className="text-xs text-[var(--color-text-muted)] bg-[rgba(255,255,255,0.06)] px-2 py-0.5 rounded-full">
-                          {t._count.channels} channel{t._count.channels !== 1 ? "s" : ""}
-                        </span>
+                {editingId === t.id ? (
+                  /* ── Edit mode ── */
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">Template name</label>
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="w-full bg-[rgba(255,255,255,0.05)] border border-purple-500/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500/80"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
+                        Models <span className="opacity-60">(comma-separated)</span>
+                      </label>
+                      <textarea
+                        value={editModels}
+                        onChange={(e) => setEditModels(e.target.value)}
+                        rows={2}
+                        className="w-full bg-[rgba(255,255,255,0.05)] border border-purple-500/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500/80 resize-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
+                        Model mapping <span className="opacity-60">(optional, JSON)</span>
+                      </label>
+                      <textarea
+                        value={editMapping}
+                        onChange={(e) => setEditMapping(e.target.value)}
+                        rows={2}
+                        className="w-full bg-[rgba(255,255,255,0.05)] border border-purple-500/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500/80 resize-none font-mono"
+                      />
+                    </div>
+                    {editError && <p className="text-red-400 text-xs">{editError}</p>}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleSaveEdit(t.id)}
+                        disabled={editSaving}
+                        className="flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30 transition-colors disabled:opacity-50"
+                      >
+                        <Check className="w-3 h-3" />
+                        {editSaving ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        disabled={editSaving}
+                        className="flex items-center gap-1 text-xs px-3 py-1.5 rounded text-[var(--color-text-muted)] border border-[var(--color-glass-border)] hover:text-white transition-colors disabled:opacity-50"
+                      >
+                        <X className="w-3 h-3" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── View mode ── */
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-white">{t.name}</span>
+                        {t._count.channels > 0 && (
+                          <span className="text-xs text-[var(--color-text-muted)] bg-[rgba(255,255,255,0.06)] px-2 py-0.5 rounded-full">
+                            {t._count.channels} channel{t._count.channels !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[var(--color-text-muted)] font-mono truncate">
+                        {t.models.split(",").slice(0, 4).join(", ")}
+                        {t.models.split(",").length > 4 && ` +${t.models.split(",").length - 4} more`}
+                      </p>
+                      {t.modelMapping && (
+                        <p className="text-xs text-purple-400/70 mt-0.5 font-mono truncate">
+                          mapping: {t.modelMapping}
+                        </p>
                       )}
                     </div>
-                    <p className="text-xs text-[var(--color-text-muted)] font-mono truncate">
-                      {t.models.split(",").slice(0, 4).join(", ")}
-                      {t.models.split(",").length > 4 && ` +${t.models.split(",").length - 4} more`}
-                    </p>
-                    {t.modelMapping && (
-                      <p className="text-xs text-purple-400/70 mt-0.5 font-mono truncate">
-                        mapping: {t.modelMapping}
-                      </p>
-                    )}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => startEdit(t)}
+                        className="text-[var(--color-text-muted)] hover:text-purple-400 transition-colors"
+                        title="Edit template"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(t.id, t.name)}
+                        className="text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
+                        title="Delete template"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => handleDelete(t.id, t.name)}
-                    className="text-[var(--color-text-muted)] hover:text-red-400 transition-colors flex-shrink-0"
-                    title="Delete template"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                )}
               </div>
             ))}
           </div>
