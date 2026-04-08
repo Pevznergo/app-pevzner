@@ -35,7 +35,7 @@ export async function POST(
 
   const start = Date.now();
   try {
-    const res = await fetch(`${newapiUrl}/api/channel/test/${channel.newapiId}`, {
+    const res = await fetch(`${newapiUrl}/api/channel/test/${channel.newapiId}?model=google%2Fgemini-2.5-flash-lite`, {
       headers: {
         Authorization: `Bearer ${newapiToken}`,
         "New-Api-User": "1",

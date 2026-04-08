@@ -46,7 +46,7 @@ export default function AdminTabs() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <StatCard
             label="Credentials"
-            value={stats.credentials.total}
+            value={stats.credentials.pending + stats.credentials.done}
             sub={`${stats.credentials.pending} pending · ${stats.credentials.done} done`}
           />
           <StatCard

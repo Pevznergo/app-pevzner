@@ -300,7 +300,7 @@ export default function AdminCredentialList() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6">
+            <div className="flex items-center justify-center gap-1 mt-6 flex-wrap">
               <button
                 onClick={() => setPage((p) => p - 1)}
                 disabled={page === 1}
@@ -308,9 +308,32 @@ export default function AdminCredentialList() {
               >
                 ← Prev
               </button>
-              <span className="text-sm text-[var(--color-text-muted)]">
-                {page} / {totalPages}
-              </span>
+              {(() => {
+                const delta = 3;
+                const pages: (number | "…")[] = [];
+                const left = Math.max(1, page - delta);
+                const right = Math.min(totalPages, page + delta);
+                if (left > 1) { pages.push(1); if (left > 2) pages.push("…"); }
+                for (let i = left; i <= right; i++) pages.push(i);
+                if (right < totalPages) { if (right < totalPages - 1) pages.push("…"); pages.push(totalPages); }
+                return pages.map((p, i) =>
+                  p === "…" ? (
+                    <span key={`ellipsis-${i}`} className="px-1 text-sm text-[var(--color-text-muted)]">…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p as number)}
+                      className={`min-w-[2rem] px-2 py-1.5 text-sm rounded-lg border transition-colors ${
+                        page === p
+                          ? "bg-[rgba(139,92,246,0.2)] text-white border-purple-500/40"
+                          : "border-[var(--color-glass-border)] text-[var(--color-text-muted)] hover:text-white"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                );
+              })()}
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page === totalPages}

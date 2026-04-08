@@ -728,7 +728,7 @@ export default function AdminChannelManager() {
                       onClick={() => testChannel(ch)}
                       disabled={testingId === ch.id}
                       className="flex items-center gap-1 text-xs px-2.5 py-1 bg-[rgba(59,130,246,0.12)] border border-blue-500/25 rounded text-blue-300 hover:bg-[rgba(59,130,246,0.22)] transition-colors disabled:opacity-50"
-                      title="Test channel with google/gemini-3.1-flash-lite-preview"
+                      title="Test channel with google/gemini-2.5-flash-lite"
                     >
                       <FlaskConical className="w-3 h-3" />
                       {testingId === ch.id ? "Testing..." : "Test"}
