@@ -1,9 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Eye, EyeOff, RefreshCw, Archive, ArchiveRestore, Settings, Zap, Trash2, FlaskConical } from "lucide-react";
 
 type Template = { id: string; name: string };
+
+const OPENROUTER_TEMPLATE_NAME = "openrouter";
+
+function findOpenRouterTemplate(templates: Template[]): Template | undefined {
+  return templates.find(
+    (template) => template.name.trim().toLowerCase() === OPENROUTER_TEMPLATE_NAME
+  );
+}
 
 type Channel = {
   id: string;
@@ -74,6 +82,7 @@ export default function AdminChannelManager() {
   // Create form
   const [formName, setFormName] = useState("");
   const [formTemplateId, setFormTemplateId] = useState("");
+  const hasAppliedDefaultTemplate = useRef(false);
   const [formChannelType, setFormChannelType] = useState(20);
   const [formApiKey, setFormApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
@@ -102,7 +111,17 @@ export default function AdminChannelManager() {
         fetch("/api/admin/templates"),
       ]);
       if (chRes.ok) setChannels((await chRes.json()).channels);
-      if (tRes.ok) setTemplates((await tRes.json()).templates);
+      if (tRes.ok) {
+        const loadedTemplates = (await tRes.json()).templates as Template[];
+        setTemplates(loadedTemplates);
+
+        // Default only once: later refreshes must preserve the admin's manual choice.
+        if (!hasAppliedDefaultTemplate.current) {
+          const openRouterTemplate = findOpenRouterTemplate(loadedTemplates);
+          if (openRouterTemplate) setFormTemplateId(openRouterTemplate.id);
+          hasAppliedDefaultTemplate.current = true;
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -225,7 +244,7 @@ export default function AdminChannelManager() {
         return;
       }
       setFormName("");
-      setFormTemplateId("");
+      setFormTemplateId(findOpenRouterTemplate(templates)?.id ?? "");
       setFormChannelType(20);
       setFormApiKey("");
       setFormBaseUrl("");
