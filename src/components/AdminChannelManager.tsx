@@ -83,7 +83,7 @@ export default function AdminChannelManager() {
   const [formName, setFormName] = useState("");
   const [formTemplateId, setFormTemplateId] = useState("");
   const hasAppliedDefaultTemplate = useRef(false);
-  const [formChannelType, setFormChannelType] = useState(20);
+  const [formChannelType, setFormChannelType] = useState(1);
   const [formApiKey, setFormApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [formBaseUrl, setFormBaseUrl] = useState("");
@@ -245,7 +245,7 @@ export default function AdminChannelManager() {
       }
       setFormName("");
       setFormTemplateId(findOpenRouterTemplate(templates)?.id ?? "");
-      setFormChannelType(20);
+      setFormChannelType(1);
       setFormApiKey("");
       setFormBaseUrl("");
       setFormProxy("");
